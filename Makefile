@@ -7,7 +7,8 @@ OBJS = \
 	arch.o \
 	kernel.o \
 	lib.o \
-	dev.o
+	dev.o \
+	user.o
 
 all: ertos
 
@@ -27,6 +28,9 @@ lib.o: force_look
 
 dev.o: force_look
 	$(MAKE) -C dev
+
+user.o: force_look
+	$(MAKE) -C user
 
 force_look:
 	true
