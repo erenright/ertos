@@ -63,3 +63,17 @@ int strcmp(const char *s1, const char *s2)
 
 	return 0;
 }
+
+int atoi(const char *str)
+{
+	const char *p = str;
+	int val = 0;
+
+	while (*p >= '0' && *p <= '9') {
+		val *= 10;
+		val += *p - '0';
+		++p;
+	}
+
+	return val;
+}
