@@ -1,0 +1,30 @@
+uart.h
+
+struct uart_ops
+	open
+	close
+	set_baud
+	disable_tx
+	enable_tx
+	rx
+	tx
+	read
+	write
+
+struct uart_fifo
+	char data[128]
+	int head
+	int tail
+
+struct uart
+	struct uart_ops uart_ops
+
+	int baud
+
+	struct uart_fifo rx_fifo
+	void *rx_wait
+
+	struct uart_fifo tx_fifo
+	void *tx_wait			// TX wait queue, procs sleep if no room
+	int state
+
