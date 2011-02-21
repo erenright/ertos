@@ -43,12 +43,20 @@ void puts(const char *s)
 	putchar('\n');
 }
 
-/*
 static int printf_d(int d)
 {
 	int num = 0;
 	char buf[10];	// Max 11 chars in sint32_t (+1 for -)
 	int i = 0;
+
+	// Is this a negative number?
+	if (d & 0x80000000) {
+		// Yes, convert to positive and add '-' to output
+		// @@@ implement abs() ?
+		--d;
+		d = ~d;
+		putchar('-');
+	}
 
 	// Find out how many digits are in this number
 	while (d > 0) {
@@ -64,7 +72,6 @@ static int printf_d(int d)
 
 	return num;
 }
-*/
 
 static int printf_x(uint32_t x)
 {
@@ -107,7 +114,7 @@ static int printf_x(uint32_t x)
 int printf(char *fmt, ...)
 {
 	va_list ap;
-	//int d;
+	int d;
 	uint32_t x;
 	const char *s;
 	int chars = 0;
@@ -118,12 +125,10 @@ int printf(char *fmt, ...)
 		switch (*fmt) {
 		case '%':	// Format requested
 			switch (*++fmt) {
-/*
 				case 'd':	// Decimal
 					d = va_arg(ap, int);
 					chars += printf_d(d);
 					break;
-*/
 
 				case 'x':
 					x = va_arg(ap, uint32_t);

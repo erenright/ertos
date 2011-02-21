@@ -68,11 +68,24 @@ int atoi(const char *str)
 {
 	const char *p = str;
 	int val = 0;
+	int neg = 0;
+
+	if (*p == '-') {
+		// This is not POSIX compliant
+		neg = 1;
+		++p;
+	}
 
 	while (*p >= '0' && *p <= '9') {
 		val *= 10;
 		val += *p - '0';
 		++p;
+	}
+
+	if (neg) {
+		// Convert to two's complement if negative previously detected
+		val = ~val;
+		++val;
 	}
 
 	return val;
