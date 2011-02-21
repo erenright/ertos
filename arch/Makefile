@@ -6,7 +6,8 @@ OBJS	= \
 	uart.o \
 	sem.o \
 	cpu.o \
-	mmu.o
+	mmu.o \
+	misc.o
 
 all: arch.o
 

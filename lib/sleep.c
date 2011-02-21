@@ -53,3 +53,8 @@ int _user_timer_trampoline_done(void)
 {
 	return _syscall(SYS_UTT_DONE);
 }
+
+int reset(void)
+{
+	return _syscall(SYS_RESET);
+}

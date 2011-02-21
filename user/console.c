@@ -175,6 +175,14 @@ static void cmd_alarm(int argc, char *argv[])
 	printf("alarm armed\r\n");
 }
 
+static void cmd_reset(int argc, char *argv[])
+{
+	reset();
+	/*NOTREACHED*/
+
+	printf("reset failed!?\r\n");
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -190,6 +198,7 @@ struct command commands[] = {
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
 	{ "ps", cmd_ps, "list running processes" },
+	{ "reset", cmd_reset, "reset the system" },
 	{ NULL, NULL }
 };
 

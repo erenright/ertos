@@ -29,6 +29,9 @@ int event_set(uint32_t mask);
 int event_wait(uint32_t mask);
 int alarm(struct alarm *a);
 
+// Sleep forever
+int reset(void);
+
 // Private system calls
 int _user_timer_trampoline_done(void);
 

@@ -11,6 +11,7 @@
 #define SYS_EVENT_WAIT		5
 #define SYS_ALARM		6
 #define SYS_UTT_DONE		7
+#define SYS_RESET		8
 
 // syscall_arm.s
 #define _syscall(num) __syscall(num, 0)

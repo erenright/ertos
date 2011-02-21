@@ -12,4 +12,6 @@
 // The number of times the timer interrupt has ticked
 extern uint32_t clkticks;
 
+void arch_reset(void);
+
 #endif // !_KERNEL_H
