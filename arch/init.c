@@ -179,7 +179,7 @@ static void init_interrupts(void)
 	// Enable Timer3 to 100Hz
 	// @@@ this should be Timer1 or Timer2, since they are only 16 bit
 	// and 16 bit is more than we need
-	register_irq_handler(TC3OI, _timer_int);
+	register_irq_handler(TC3OI, _timer_int, 0);
 	enable_irq(TC3OI);
 
 	outl(Timer3Load, 5080);		// 100Hz

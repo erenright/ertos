@@ -31,23 +31,33 @@ void c_irq(void)
 	outl(VIC2VectAddr, 0);
 }
 
-int register_irq_handler(int irq, void *handler)
+int register_irq_handler(int irq, void *handler, int fast)
 {
 	uint32_t *addr;
 	uint32_t *ctrl;
+	uint32_t *sel;
 	int i = 0;
 
 
 	if (irq < 32) {
 		addr = (uint32_t *)VIC1VectAddr0;
 		ctrl = (uint32_t *)VIC1VectCntl0;
+		sel  = (uint32_t *)VIC1IntSelect;
 	} else if (irq < 64) {
 		irq -= 32;
 		addr = (uint32_t *)VIC2VectAddr0;
 		ctrl = (uint32_t *)VIC2VectCntl0;
+		sel  = (uint32_t *)VIC1IntSelect;
 	} else {
 		return -1;
 	}
+
+	i = inl(sel);
+	if (fast)
+		i |= (1 << irq);
+	else
+		i &= ~(1 << irq);
+	outl(sel, i);
 
 	// Look for an open vector
 	for (i = 0; i < 16; ++i) {

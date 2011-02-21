@@ -58,7 +58,7 @@ static int ep93xx_uart_open(struct uart *uart)
 	outl(UART1LinCtrlHigh, WLEN_8);
 
 	// Set up a single interrupt
-	register_irq_handler(INT_UART1, uart1_intr);
+	register_irq_handler(INT_UART1, uart1_intr, 1);
 
 	// Enable the UART, with TX and RX interrupts
 	outl(UART1Ctrl, RIE | TIE | UARTE);

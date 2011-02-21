@@ -9,6 +9,6 @@ void disable_irq(int irq);
 
 // kernel/irq.c
 void c_irq(void);
-int register_irq_handler(int irq, void *handler);
+int register_irq_handler(int irq, void *handler, int fast);
 
 #endif // !_IRQ_H
