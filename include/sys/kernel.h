@@ -7,7 +7,7 @@
 
 // Must match up with HZ
 #define clkticks_to_ms(x) (x * 10)
-#define ms_to_clkticks(x) (x / 10)	// @@@ need div handlers
+#define ms_to_clkticks(x) ((unsigned)x / 10)
 
 // The number of times the timer interrupt has ticked
 extern uint32_t clkticks;

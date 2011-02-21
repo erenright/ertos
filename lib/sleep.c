@@ -38,3 +38,13 @@ int event_wait(uint32_t mask)
 {
 	return __syscall(SYS_EVENT_WAIT, mask);
 }
+
+int alarm(struct alarm *a)
+{
+	return __syscall(SYS_ALARM, (uint32_t)a);
+}
+
+int _user_timer_trampoline_done(void)
+{
+	return _syscall(SYS_UTT_DONE);
+}

@@ -2,6 +2,7 @@ include ../Makefile.inc
 
 OBJS	= \
 	processes.o \
+	timers.o \
 	red.o \
 	console.o
 

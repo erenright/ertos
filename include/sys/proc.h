@@ -19,6 +19,8 @@ struct proc {
 
 	// WARNING: irq.s context switching depends on this offset!
 	uint32_t	regs[17];		// Register set
+	uint32_t	backup_regs[17];	// Backup register set
+
 	uint32_t	*stack;			// Current stack
 	void		*stack_base;		// Stack base address
 
@@ -29,6 +31,15 @@ struct proc {
 
 	uint32_t	event_mask;		// Event(s) that this proc
 						// is waiting on
+
+	struct {
+		void (*handler)(void);
+		uint32_t next;
+		uint32_t period;
+		int oneshot;
+		int done;
+		int active;
+	} timer;
 };
 
 // kernel/sched.c

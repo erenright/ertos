@@ -4,7 +4,8 @@ OBJS	= \
 	string.o \
 	stdio.o \
 	sleep.o \
-	syscall_arm.o
+	syscall_arm.o \
+	math.o
 
 all: lib.o
 

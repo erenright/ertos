@@ -152,6 +152,29 @@ static void cmd_dumpmem(int argc, char *argv[])
 	puts("");
 }
 
+void handle_alarm(void)
+{
+	printf("alarm hit!\r\n");
+}
+
+static void cmd_alarm(int argc, char *argv[])
+{
+	struct alarm a;
+
+	if (argc != 3) {
+		printf("alarm <msec> <oneshot>\r\n");
+		return;
+	}
+
+	a.msec = atoi(argv[1]);
+	a.oneshot = atoi(argv[2]);
+	a.handler = handle_alarm;
+
+	alarm(&a);
+
+	printf("alarm armed\r\n");
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -162,6 +185,7 @@ static void cmd_help(int, char **);
 
 struct command commands[] = {
 	{ "?", cmd_help, "synonym for \"help\"" },
+	{ "alarm", cmd_alarm, "test alarm: alarm <msec> <oneshot>" },
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },

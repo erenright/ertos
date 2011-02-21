@@ -102,13 +102,35 @@ static int sys_event_wait(uint32_t *arg)
 	return 0;
 }
 
+static int sys_alarm(uint32_t *arg)
+{
+	struct alarm *a = (struct alarm *)*arg;
+
+	cur->timer.handler = a->handler;
+	cur->timer.period = ms_to_clkticks(a->msec);
+	cur->timer.next = clkticks + cur->timer.period;
+	cur->timer.oneshot = a->oneshot;
+
+	return 0;
+}
+
+static int sys_utt_done(uint32_t *arg)
+{
+	cur->timer.done = 1;
+	request_schedule();
+
+	return 0;
+}
+
 static void *syscall_table[] = {
 	sys_wait,	// 0
 	sys_wake,	// 1
 	sys_sleep,	// 2
 	sys_yield,	// 3
 	sys_event_set,	// 4
-	sys_event_wait	// 5
+	sys_event_wait,	// 5
+	sys_alarm,	// 6
+	sys_utt_done	// 7
 };
 
 int c_svc(uint32_t num, uint32_t *regs)

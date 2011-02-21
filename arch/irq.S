@@ -76,20 +76,11 @@ arm_irq_entry:
 	cmp	r0, #0
 	ldmeqia	sp!, {r0-r3,r12,pc}^	@ no, so return
 
-
+	ldmia	sp!, {r0-r3,r12,lr}	@ restore original regs
 
 	/*
 	 * Scheduling and context-switch code follows
 	 */
-
-	bl	schedule		@ call the scheduler
-	ldr	r0, =_next
-	ldr	r0, [r0]
-	cmp	r0, #0			@ did it find a task to switch to?
-	ldmeqia	sp!, {r0-r3,r12,pc}^	@ no, so return
-
-	ldmia	sp!, {r0-r3,r12,lr}	@ restore original regs
-
 
 	/* Record original sp_IRQ in handler_irqstack  */
 	stmdb	sp!, {r0,r1}		@ free r0 and r1 so we can save sp
@@ -111,6 +102,17 @@ arm_irq_entry:
 	stmia	sp!, {r0-r14}^		@ store user regs
 
 .Lnocur:
+	/* Restore sp_IRQ for the following C call */
+	ldr	sp, =handler_irqstack
+	ldr	sp, [sp]
+
+	/* Call the scheduler */
+	bl	schedule		@ call the scheduler
+	ldr	r0, =_next
+	ldr	r0, [r0]
+	cmp	r0, #0			@ did it find a task to switch to?
+	ldmeqia	sp!, {r0-r3,r12,pc}^	@ no, so return
+
 	/* Load next task */
 	ldr	sp, =_next		@ load ptr to next task
 	ldr	sp, [sp]

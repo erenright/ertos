@@ -2,6 +2,7 @@
 #include <sys/proc.h>
 #include <sys/mem.h>
 #include <sys/irq.h>
+#include <sys/timers.h>
 
 #include <string.h>
 #include <types.h>
@@ -190,6 +191,20 @@ void schedule(void)
 	// This will be the next task, otherwise the cpu will be put to sleep
 	// Prepare the context switch
 	_next->state = PROC_ACTIVE;
+
+	// Does this task have an associated timer that is not running?
+	if (_next->timer.next > 0 && !_next->timer.active) {
+		// Yes, has it tripped?
+		if (clkticks >= _next->timer.next) {
+			// Yes, handle it
+			handle_task_timer(_next);
+		}
+	}
+	// Does this task have an associated timer that is active but done?
+	else if (_next->timer.active && _next->timer.done) {
+		// Yes, restore the previous context
+		handle_task_timer_done(_next);
+	}
 
 	// Context switch will occur when the current irq is finished
 out:
