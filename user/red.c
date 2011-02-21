@@ -17,7 +17,7 @@ static void handle_alarm(void)
 
 	for (i = 0; i < 10; ++i) {
 		*leds ^= LED_RED;
-		sleep(10);
+		sleep(100);
 	}
 }
 
@@ -34,7 +34,7 @@ void red_task(void)
 
 	while (1) {
 		// Sleep 1 second
-		sleep(100);
+		sleep(1000);
 
 		*leds ^= LED_RED;
 	}

@@ -4,6 +4,8 @@
  * System calls for sleep-related functions.
  */
 
+#include <sys/kernel.h>
+
 #include <sleep.h>
 #include <syscall.h>
 
@@ -18,9 +20,12 @@ int wake(struct completion *c)
 	return __syscall(SYS_WAKE, (uint32_t)c);
 }
 
-// Sleep for period ms. @@@ currently this is not ms but clkticks ticks!
+// Sleep for period ms.
 int sleep(uint32_t period)
 {
+	// This would ideally be done in the syscall itself, however
+	// emulated division will be better off in user mode
+	period = ms_to_clkticks(period);
 	return __syscall(SYS_SLEEP, period);
 }
 

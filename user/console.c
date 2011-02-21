@@ -91,7 +91,7 @@ static void cmd_ticker(int argc, char *argv[])
 	ticker_done = 0;
 
 	while (!ticker_done) {
-		sleep(25); // 250ms
+		sleep(250);
 
 		putchar('\r');
 		putchar(ticker[tick]);
