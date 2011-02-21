@@ -58,9 +58,19 @@ void free(void *ptr)
 
 void user_page_fault(void *ptr)
 {
-	printf("%s: illegal pointer access at 0x%x, killing process\r\n",
-		cur->name, ptr);
-
+	printf("%s: illegal pointer access at 0x%x from 0x%x, killing process\r\n",
+		cur->name, ptr, cur->regs[16]);
+/*
+	printf("spsr: %x r14_IRQ (?): %x\r\n", cur->regs[0], cur->regs[1]);
+	printf("r0: %x r1: %x r2: %x r3: %x\r\n",
+		cur->regs[2], cur->regs[3], cur->regs[4], cur->regs[5]);
+	printf("r4: %x r5: %x r6: %x r7: %x\r\n",
+		cur->regs[6], cur->regs[7], cur->regs[8], cur->regs[9]);
+	printf("r8: %x r9: %x r10: %x r11: %x\r\n",
+		cur->regs[10], cur->regs[11], cur->regs[12], cur->regs[13]);
+	printf("r12: %x sp: %x lr: %x\r\n",
+		cur->regs[14], cur->regs[15], cur->regs[16]);
+*/
 	// @@@ this should be a function somewhere
 	cur->state = PROC_KILLED;
 	cur->ticks_wakeup = 0xFFFFFFFF;
