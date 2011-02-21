@@ -71,7 +71,7 @@ int atoi(const char *str)
 	int neg = 0;
 
 	if (*p == '-') {
-		// This is not POSIX compliant
+		// Is this POSIX compliant?
 		neg = 1;
 		++p;
 	}
