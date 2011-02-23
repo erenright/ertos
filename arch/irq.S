@@ -95,11 +95,12 @@ arm_irq_entry:
 	ldr	sp, [sp]
 	cmp	sp, #0
 	beq	.Lnocur			@ no current task exists!
-	add	sp, sp, #16		@ +(4*4) for proc->regs
+	add	sp, sp, #24		@ +(6*4) for proc->regs[2]
 
+	stmia	sp, {r0-r14}^		@ store user regs
+	sub	sp, sp, #8		@ -(2*4) for proc->regs[0]
 	mrs	r0, spsr
-	stmia	sp!, {r0,r14}		@ store spsr and lr
-	stmia	sp!, {r0-r14}^		@ store user regs
+	stmia	sp, {r0,r14}		@ store spsr and lr
 
 .Lnocur:
 	/* Restore sp_IRQ for the following C call */
@@ -138,13 +139,7 @@ arm_irq_entry:
 	ldr	sp, =handler_irqstack
 	ldr	sp, [sp]		@ reload sp_IRQ
 
-	cmp	lr, #0
-	bne	.Ldone
-.Ldone:
-
-	stmdb	sp!, {lr}
-	ldmia	sp!, {pc}^
-	@mov	pc, lr			@ return
+	movs	pc, lr			@ return
 
 	.endfunc
 

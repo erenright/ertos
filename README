@@ -10,7 +10,7 @@ Bugs:
 
 - alarm() will not wake a task which is not on the run queue
 
-- There are random faults which appear to be caused by the UART subsystem.
-  This may be caused by the fact that user-mode tasks can directly access
-  the UART data structures.  TODO: implement cons_write/read as syscalls.
+- TODO: implement cons_write/read as syscalls.
 
+- arm_irq_entry can be cleaned up due to the fact that there can will no
+  longer be cases of NULL cur or _next
