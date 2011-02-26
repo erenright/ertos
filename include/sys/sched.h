@@ -2,9 +2,11 @@
 #define _SCHED_H
 
 #include <sys/proc.h>
+#include <proc.h>
 
 // kernel/sched.c
 extern struct proc *cur;
+extern struct self *self;
 
 void sched_init(void);
 void schedule(void);

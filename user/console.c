@@ -243,6 +243,8 @@ void console_task(void)
 #endif
 
 	while (1) {
+		stdio_buf_disable();
+
 		if (!ticker_done)
 			cmd_ticker(0, NULL);
 
@@ -256,6 +258,8 @@ void console_task(void)
 			// Ignore an empty string
 			if (buf[0] == '\0')
 				continue;
+
+			stdio_buf_enable();
 
 			// Break up the arguments
 			argc = 0;

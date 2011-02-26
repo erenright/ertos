@@ -1,4 +1,6 @@
 #include <types.h>
+#include <sys/sched.h>
+#include <sys/kernel.h>
 
 #include "../arch/regs.h"
 
@@ -7,6 +9,7 @@ void c_irq(void)
 {
 	void (*handler)(void);
 
+	self = kernel_self;
 
 /*
 	// Notify VIC1 that we are processing the interrupt
@@ -29,6 +32,8 @@ void c_irq(void)
 
 	// Notify VIC2 that we have processed the interrupt
 	outl(VIC2VectAddr, 0);
+
+	self = cur->self;
 }
 
 int register_irq_handler(int irq, void *handler, int fast)

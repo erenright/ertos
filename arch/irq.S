@@ -93,8 +93,6 @@ arm_irq_entry:
 	/* Store current task */
 	ldr	sp, =cur		@ load ptr to current task
 	ldr	sp, [sp]
-	cmp	sp, #0
-	beq	.Lnocur			@ no current task exists!
 	add	sp, sp, #24		@ +(6*4) for proc->regs[2]
 
 	stmia	sp, {r0-r14}^		@ store user regs
@@ -102,25 +100,18 @@ arm_irq_entry:
 	mrs	r0, spsr
 	stmia	sp, {r0,r14}		@ store spsr and lr
 
-.Lnocur:
 	/* Restore sp_IRQ for the following C call */
 	ldr	sp, =handler_irqstack
 	ldr	sp, [sp]
 
 	/* Call the scheduler */
 	bl	schedule		@ call the scheduler
-	ldr	r0, =_next
+	ldr	r0, =cur
 	ldr	r0, [r0]
-	cmp	r0, #0			@ did it find a task to switch to?
-	ldmeqia	sp!, {r0-r3,r12,pc}^	@ no, so return
 
 	/* Load next task */
-	ldr	sp, =_next		@ load ptr to next task
+	ldr	sp, =cur		@ load ptr to next task
 	ldr	sp, [sp]
-
-	ldr	r0, =cur
-	str	sp, [r0]		@ cur = _next
-
 	add	sp, sp, #16		@ +(4*4) for proc->regs
 	ldmia	sp!, {r0,lr}		@ load user spsr and r14_irq
 

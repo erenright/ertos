@@ -2,6 +2,7 @@
 #define _KERNEL_H
 
 #include <types.h>
+#include <proc.h>
 
 #define HZ 100
 
@@ -11,6 +12,8 @@
 
 // The number of times the timer interrupt has ticked
 extern uint32_t clkticks;
+
+extern struct self *kernel_self;
 
 void arch_reset(void);
 

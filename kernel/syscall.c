@@ -148,6 +148,8 @@ int c_svc(uint32_t num, uint32_t *regs)
 	int (*func)(uint32_t *regs);
 	int rc = -1;
 
+	self = kernel_self;
+
 	if (real_num > (sizeof(syscall_table) >> 2)) {
 		printf("invalid syscall: 0x%x\r\n", real_num);
 		rc = -1;
@@ -155,6 +157,8 @@ int c_svc(uint32_t num, uint32_t *regs)
 		func = syscall_table[real_num];
 		rc = func(regs + 1);
 	}
+
+	self = cur->self;
 
 	return rc;
 }

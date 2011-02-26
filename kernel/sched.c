@@ -4,10 +4,12 @@
 #include <sys/irq.h>
 #include <sys/timers.h>
 
+#include <cons.h>
 #include <string.h>
 #include <types.h>
 #include <stdio.h>
 #include <sleep.h>
+#include <proc.h>
 
 #define PROC_STACK_SIZE	4096	// 4k stack
 
@@ -20,8 +22,24 @@ static struct proc *idle_task = NULL;
 struct proc *cur = NULL;
 static int next_pid = 0;
 
+struct self *self;
+
 uint32_t _need_reschedule = 0;
 int sched_enabled = 0;
+
+// Returns non-zero on error
+static int init_self(struct self *s)
+{
+	s->stdout.ptr = malloc(STDOUT_SIZE);
+	if (s->stdout.ptr == NULL)
+		return 1;
+
+	s->stdout.idx = 0;
+	s->stdout.buf_enable = 1;
+	s->stdout.buf_last = 1;
+
+	return 0;
+}
 
 struct proc * do_spawn(void (*entry)(void), const char *name)
 {
@@ -73,6 +91,14 @@ struct proc * do_spawn(void (*entry)(void), const char *name)
 		SP = (uint32_t)entry;	// r14 / lr
 		#undef SP
 
+		// Initialize "Self"
+		proc->self = malloc(sizeof(struct self));
+		if (proc->self == NULL)
+			goto out_err;
+		if (init_self(proc->self))
+			goto out_err;
+
+		// Add to process list
 		proc->list.next = (struct list *)proc;
 		proc->list.prev = (struct list *)proc;
 	}
@@ -84,6 +110,9 @@ out_err:
 	if (proc != NULL) {
 		if (proc->stack_base != NULL)
 			free(proc->stack_base);
+
+		if (proc->self != NULL)
+			free(proc->self);
 
 		free(proc);
 	}
@@ -124,18 +153,36 @@ void disable_scheduler(void)
 	sched_enabled = 0;
 }
 
-// Used by arch/irq.s
-struct proc *_next = NULL;
+static void swtch(struct proc *next)
+{
+	next->state = PROC_ACTIVE;
 
-// arch/irq.s
-void _switch(struct proc *n, struct proc *c);
+	// Does this task have an associated timer that is not running?
+	if (next->timer.next > 0 && !next->timer.active) {
+		// Yes, has it tripped?
+		if (clkticks >= next->timer.next) {
+			// Yes, handle it
+			handle_task_timer(next);
+		}
+	}
+	// Does this task have an associated timer that is active but done?
+	else if (next->timer.active && next->timer.done) {
+		// Yes, restore the previous context
+		handle_task_timer_done(next);
+	}
 
+	cur = next;
+	self = cur->self;
+}
+
+// Do not call printf from this function
 void schedule(void)
 {
 	struct proc *p, *op;
+	struct proc *next;
 
 	// Assume we find nothing
-	_next = idle_task;
+	next = idle_task;
 
 	if (procs == NULL)
 		goto out;
@@ -144,7 +191,6 @@ void schedule(void)
 	if (cur == NULL) {
 		// Start at the top
 		p = procs;
-		//_next = procs;
 	} else {
 		// Is the current task the idle task?
 		if (cur != idle_task) {
@@ -169,7 +215,7 @@ void schedule(void)
 		// Is this task on the run queue?
 		if (p->state == PROC_RUN) {
 			// Yes, select it
-			_next = p;
+			next = p;
 			break;
 		}
 
@@ -178,8 +224,8 @@ void schedule(void)
 			// Yes, can it be woken up?
 			if (clkticks >= p->ticks_wakeup) {
 				// Yes, select it
-				_next = p;
-				_next->ticks_wakeup = 0xFFFFFFFF;
+				next = p;
+				next->ticks_wakeup = 0xFFFFFFFF;
 				break;
 			}
 		}
@@ -187,32 +233,9 @@ void schedule(void)
 		p = (struct proc *)p->list.next;
 	} while (p != op);
 
-
-	// This will be the next task, otherwise the cpu will be put to sleep
-	// Prepare the context switch
-	_next->state = PROC_ACTIVE;
-
-	// Does this task have an associated timer that is not running?
-	if (_next->timer.next > 0 && !_next->timer.active) {
-		// Yes, has it tripped?
-		if (clkticks >= _next->timer.next) {
-			// Yes, handle it
-			handle_task_timer(_next);
-		}
-	}
-	// Does this task have an associated timer that is active but done?
-	else if (_next->timer.active && _next->timer.done) {
-		// Yes, restore the previous context
-		handle_task_timer_done(_next);
-	}
-
-	// Context switch will occur when the current irq is finished
 out:
 
-	// @@@
-	//_switch(_next, cur);
-	//_next = NULL;
-
+	swtch(next);
 
 	_need_reschedule = 0;
 }
@@ -235,12 +258,19 @@ void idle(void)
 
 void sched_init(void)
 {
+	const char sched_init_err[] = "sched_init: failed to create idle task\r\n";
+
+	self = kernel_self;
+
 	//idle_task = do_spawn(idle, PROC_SVC);
 	idle_task = do_spawn(idle, "[idle]");
         idle_task->state = PROC_SLEEP;
 	if (idle_task == NULL) {
-		puts("sched_init: failed to create idle task");
+		cons_write(sched_init_err, sizeof(sched_init_err));
 		while (1);	// @@@ panic()
 	}
+
+	// Required for early printf
+	cur = idle_task;
 }
 

@@ -1,8 +1,9 @@
-#ifndef _PROC_H
-#define _PROC_H
+#ifndef _SYS_PROC_H
+#define _SYS_PROC_H
 
 #include <sys/list.h>
 #include <types.h>
+#include <proc.h>
 
 enum proc_state {
 	PROC_ACTIVE = 0,			// Currently running
@@ -40,9 +41,11 @@ struct proc {
 		int done;
 		int active;
 	} timer;
+
+	struct self *self;
 };
 
 // kernel/sched.c
 struct proc * spawn(void (*entry)(void), const char *name);
 
-#endif // !_PROC_H
+#endif // !_SYS_PROC_H

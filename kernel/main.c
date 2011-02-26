@@ -28,16 +28,28 @@ static void run_boot_processes(void)
 
 		kproc = spawn(uproc->main, uproc->name);
 		if (kproc)
-			printf("spawned task \"%s\": %x @ %x (p %x, sb %x)\r\n",
+			printf("spawned task \"%s\": %x @ %x (p %x, sb %x, s %x)\r\n",
 				uproc->name,
 				kproc->pid,
 				(uint32_t)uproc->main,
 				kproc,
-				kproc->stack_base);
+				kproc->stack_base,
+				kproc->self);
 		else
 			printf("failed to spawn task: %s\r\n", uproc->name);
 	}
 }
+
+static char kstdout[STDOUT_SIZE];
+
+struct self _kernel_self = {
+	.stdout.ptr = kstdout,
+	.stdout.idx = 0,
+	.stdout.buf_enable = 1,
+	.stdout.buf_last = 1
+};
+
+struct self *kernel_self = &_kernel_self;
 
 // Main kernel entry point. Perform initialization here.
 int main(void)
@@ -56,6 +68,7 @@ int main(void)
 	puts("Core arch and interrupts online");
 	printf("Heap is 0x%x+0x%x\r\n",
 		_heap_start, _heap_size);
+	printf("Kernel self is 0x%x\r\n", kernel_self);
 
 	run_boot_processes();
 

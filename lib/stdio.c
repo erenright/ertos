@@ -1,5 +1,7 @@
 #include <cons.h>
 #include <sleep.h>
+#include <proc.h>
+#include <sys/sched.h>
 
 // Stolen from host libc
 #include <stdarg.h>
@@ -7,9 +9,30 @@
 // Set to true if input should echo characters
 static int echo = 1;
 
+void flush(void)
+{
+	cons_write(self->stdout.ptr, self->stdout.idx);
+	self->stdout.idx = 0;
+}
+
+// Attempt to queue a char.  If the queue is full, flush it and
+// then place the char.
 void putchar(char c)
 {
-	cons_write(&c, 1);
+	if (self->stdout.buf_enable) {
+		// Flush queue if required
+		if (self->stdout.idx >= STDOUT_SIZE)
+			flush();
+
+		// Queue char
+		self->stdout.ptr[self->stdout.idx++] = c;
+
+		// Flush on newline
+		if (c == '\n')
+			flush();
+	} else {
+		cons_write(&c, 1);
+	}
 }
 
 void puthexchar(char c)
@@ -20,14 +43,14 @@ void puthexchar(char c)
 	else
 		x = (c >> 4) + '0';
 
-	cons_write(&x, 1);
+	putchar(x);
 
 	if ((c & 0xf) > 9)
 		x = (c & 0xf) - 10 + 'A';
 	else
 		x = (c & 0xf) + '0';
 
-	cons_write(&x, 1);
+	putchar(x);
 }
 
 static void _puts(const char *s)
@@ -170,6 +193,8 @@ char *gets(char *s, int size)
 	char c;
 	int status;
 
+	stdio_buf_disable();
+
 	do {
 		// Read a byte
 		status = cons_read(&c, 1);
@@ -200,5 +225,7 @@ char *gets(char *s, int size)
 	*s = '\0';
 
 out:
+	stdio_buf_restore();
+
 	return rp;
 }
