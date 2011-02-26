@@ -12,5 +12,6 @@ Bugs:
 
 - TODO: implement cons_write/read as syscalls.
 
-- arm_irq_entry can be cleaned up due to the fact that there can will no
-  longer be cases of NULL cur or _next
+- There is an exception generated when there is heavy serial I/O
+  (test with repeated '?' commands). The displayed data is also
+  garbled a bit. This is possibly fixed by the above TODO
