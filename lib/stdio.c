@@ -72,6 +72,12 @@ static int printf_d(int d)
 	char buf[10];	// Max 11 chars in sint32_t (+1 for -)
 	int i = 0;
 
+	// Quick handling of zero
+	if (d == 0) {
+		putchar('0');
+		return 1;
+	}
+
 	// Is this a negative number?
 	if (d & 0x80000000) {
 		// Yes, convert to positive and add '-' to output
@@ -190,6 +196,7 @@ int printf(char *fmt, ...)
 char *gets(char *s, int size)
 {
 	char *rp = s;
+	char *orig_s = s;
 	char c;
 	int status;
 
@@ -211,13 +218,28 @@ char *gets(char *s, int size)
 			continue;
 		}
 
-		// Store char
-		if (c != '\n' && c != '\r') {
+		// Process char
+		switch (c) {
+		case '\r':
+		case '\n':
+			// Do nothing
+			break;
+
+		case '\b':	// Backspace
+			if (s > orig_s) {
+				_puts("\b \b");
+				--s;
+			}
+			break;
+
+		default:
+			// Store char
 			*s++ = c;
 			--size;
 
 			if (echo)
 				putchar(c);
+			break;
 		}
 	} while (c != '\n' && c != '\r' && size > 0);
 
