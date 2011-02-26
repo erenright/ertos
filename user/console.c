@@ -8,6 +8,7 @@
 
 #include <sys/proc.h>
 #include <sys/sched.h>
+#include <sys/kernel.h>
 
 #include <stdio.h>
 #include <sleep.h>
@@ -183,6 +184,16 @@ static void cmd_reset(int argc, char *argv[])
 	printf("reset failed!?\r\n");
 }
 
+static void cmd_kstat(int argc, char *arg[])
+{
+	struct kstat lkstat;
+
+	// make local copy @@@ syscall for concurrency?
+	memcpy(&lkstat, &kstat, sizeof(lkstat));
+
+	printf("ISR recursions prevented: %d\r\n", lkstat.isr_recursion);
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -197,6 +208,7 @@ struct command commands[] = {
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
+	{ "kstat", cmd_kstat, "dump kernel statistics" },
 	{ "ps", cmd_ps, "list running processes" },
 	{ "reset", cmd_reset, "reset the system" },
 	{ NULL, NULL }

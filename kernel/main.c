@@ -8,10 +8,13 @@
 
 #include <sys/irq.h>
 #include <sys/sched.h>
+#include <sys/kernel.h>
 
 #include <stdio.h>
 
 #include "../user/processes.h"
+
+struct kstat kstat;
 
 // arch/init.c
 void arch_init(void);
@@ -56,10 +59,11 @@ int main(void)
 {
 	// Interrupts are disabled upon entry
 
-
 	mem_init();	// Must come first in case arch and sched need malloc
 	arch_init();
 	sched_init();
+
+	memset(&kstat, 0, sizeof(kstat));
 
 	// OK, everything should be good to go so bring up the interrupts
 	sti();

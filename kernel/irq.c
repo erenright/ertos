@@ -4,7 +4,8 @@
 
 #include "../arch/regs.h"
 
-//void __attribute__((interrupt("IRQ"))) c_irq(void)
+void arm_irq_entry(void);
+
 void c_irq(void)
 {
 	void (*handler)(void);
@@ -27,7 +28,10 @@ void c_irq(void)
 	handler = (void *)inl(VIC2VectAddr);
 
 	// Service the interrupt
-	if (handler != NULL)
+	// Avoid recursion into arm_irq_entry, @@@ why is it showing up??
+	if (handler == arm_irq_entry)
+		++kstat.isr_recursion;
+	else if (handler != NULL)
 		handler();
 
 	// Notify VIC2 that we have processed the interrupt
