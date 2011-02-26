@@ -4,7 +4,7 @@
 #include <types.h>
 #include <sleep.h>
 
-#define UART_FIFO_SIZE	128
+#define UART_FIFO_SIZE	1024
 
 struct uart;
 

@@ -36,7 +36,7 @@ static inline void uart_fifo_remove(struct uart_fifo *f, void *buf, size_t len)
 
 int uart_write(struct uart *uart, const void *buf, size_t len)
 {
-	int rc = -1;	// Default to no data written
+	int rc = 0;	// Default to no data written
 	int available;
 
 	// Disable transmit so we don't clash with the transmit queue
