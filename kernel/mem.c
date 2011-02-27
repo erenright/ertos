@@ -73,7 +73,7 @@ void user_page_fault(void *ptr)
 */
 	// @@@ this should be a function somewhere
 	cur->state = PROC_KILLED;
-	cur->ticks_wakeup = 0xFFFFFFFF;
+	cur->timer.ticks_wakeup = 0xFFFFFFFF;
 	cur->event_mask = 0;
 
 	request_schedule();

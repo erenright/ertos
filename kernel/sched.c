@@ -55,7 +55,7 @@ struct proc * do_spawn(void (*entry)(void), const char *name)
 		// @@@ this will overflow eventually
 		proc->pid = ++next_pid;
 		proc->state = PROC_RUN;
-		proc->ticks_wakeup = 0xFFFFFFFF;
+		proc->timer.ticks_wakeup = 0xFFFFFFFF;
 		strncpy(proc->name, name, sizeof(proc->name));
 
 		// Allocate a stack
@@ -153,23 +153,45 @@ void disable_scheduler(void)
 	sched_enabled = 0;
 }
 
-static void swtch(struct proc *next)
+// Determine if this task has any timers coming up.
+// If so, it may join the run queue
+static void check_timers(struct proc *p)
 {
-	next->state = PROC_ACTIVE;
-
 	// Does this task have an associated timer that is not running?
-	if (next->timer.next > 0 && !next->timer.active) {
+	if (p->timer.next > 0 && !p->timer.active) {
 		// Yes, has it tripped?
-		if (clkticks >= next->timer.next) {
-			// Yes, handle it
-			handle_task_timer(next);
+		if (clkticks >= p->timer.next) {
+			// Yes, handle it and place on run queue
+			handle_task_timer(p);
+
+			// This task is now eligible to run
+			goto out;
 		}
 	}
 	// Does this task have an associated timer that is active but done?
-	else if (next->timer.active && next->timer.done) {
+	else if (p->timer.active && p->timer.done) {
 		// Yes, restore the previous context
-		handle_task_timer_done(next);
+		handle_task_timer_done(p);
 	}
+
+	// Is this task sleeping?
+	if (p->state == PROC_SLEEP) {
+		// Yes, can it be woken up?
+		if (clkticks >= p->timer.ticks_wakeup) {
+			// Yes, select it
+			p->timer.ticks_wakeup = 0xFFFFFFFF;
+			p->state = PROC_RUN;
+			goto out;
+		}
+	}
+
+out:
+	return;
+}
+
+static void swtch(struct proc *next)
+{
+	next->state = PROC_ACTIVE;
 
 	cur = next;
 	self = cur->self;
@@ -212,22 +234,14 @@ void schedule(void)
 	// Find a task who is not waiting
 	op = p;
 	do {
+		// Determine if this task has any timers which have fired
+		check_timers(p);
+
 		// Is this task on the run queue?
 		if (p->state == PROC_RUN) {
 			// Yes, select it
 			next = p;
 			break;
-		}
-
-		// Is this task sleeping?
-		if (p->state == PROC_SLEEP) {
-			// Yes, can it be woken up?
-			if (clkticks >= p->ticks_wakeup) {
-				// Yes, select it
-				next = p;
-				next->ticks_wakeup = 0xFFFFFFFF;
-				break;
-			}
 		}
 
 		p = (struct proc *)p->list.next;

@@ -27,9 +27,6 @@ struct proc {
 
 	char		name[16];		// Name
 
-	uint32_t	ticks_wakeup;		// Number of timer ticks
-						// at which to force runnable
-
 	uint32_t	event_mask;		// Event(s) that this proc
 						// is waiting on
 
@@ -40,6 +37,12 @@ struct proc {
 		int oneshot;
 		int done;
 		int active;
+		int last_state;
+
+		uint32_t ticks_wakeup;		// Number of timer ticks
+						// at which to force runnable
+
+		uint32_t last_ticks_wakeup;
 	} timer;
 
 	struct self *self;

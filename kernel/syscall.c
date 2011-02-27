@@ -57,7 +57,7 @@ static int sys_sleep(uint32_t *arg)
 	uint32_t period = *arg;
 
 	cur->state = PROC_SLEEP;
-	cur->ticks_wakeup = clkticks + period;// @@@ must use ms_to_clkticks
+	cur->timer.ticks_wakeup = clkticks + period;// @@@ must use ms_to_clkticks
 	request_schedule();
 
 	return 0;

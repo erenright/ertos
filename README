@@ -8,8 +8,6 @@ RedBoot> go
 
 Bugs:
 
-- alarm() will not wake a task which is not on the run queue
-
 - TODO: implement cons_write/read as syscalls.
 
 - Returning values from syscalls does not work (returns syscall number)

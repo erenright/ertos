@@ -26,6 +26,9 @@ void handle_task_timer_done(struct proc *p)
 	memcpy(p->regs, p->backup_regs, sizeof(p->regs));
 
 	p->timer.active = 0;
+
+	p->state = p->timer.last_state;
+	p->timer.ticks_wakeup = p->timer.last_ticks_wakeup;
 }
 
 void handle_task_timer(struct proc *p)
@@ -50,5 +53,9 @@ void handle_task_timer(struct proc *p)
 		p->timer.next = 0;
 	else
 		p->timer.next = clkticks + p->timer.period;
+
+	p->timer.last_state = p->state;
+	p->timer.last_ticks_wakeup = p->timer.ticks_wakeup;
+	p->state = PROC_RUN;
 }
 
