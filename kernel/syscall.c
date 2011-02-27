@@ -12,6 +12,7 @@
 #include <types.h>
 #include <stdio.h>
 #include <sleep.h>
+#include <kstat.h>
 
 static int sys_wait(uint32_t *args)
 {
@@ -130,6 +131,15 @@ static int sys_reset(uint32_t *arg)
 	return 0;
 }
 
+static int sys_kstat(uint32_t *arg)
+{
+	struct kstat *uptr = (struct kstat *)*arg;
+
+	memcpy(uptr, &kstat, sizeof(struct kstat));
+
+	return 0;
+}
+
 static void *syscall_table[] = {
 	sys_wait,	// 0
 	sys_wake,	// 1
@@ -139,7 +149,8 @@ static void *syscall_table[] = {
 	sys_event_wait,	// 5
 	sys_alarm,	// 6
 	sys_utt_done,	// 7
-	sys_reset	// 8
+	sys_reset,	// 8
+	sys_kstat,	// 9
 };
 
 int c_svc(uint32_t num, uint32_t *regs)

@@ -14,6 +14,7 @@
 #include <sleep.h>
 #include <cons.h>
 #include <string.h>
+#include <kstat.h>
 
 // Maximum number of arguments a command may have
 #define MAX_ARGS 8
@@ -187,11 +188,14 @@ static void cmd_reset(int argc, char *argv[])
 static void cmd_kstat(int argc, char *arg[])
 {
 	struct kstat lkstat;
+	int rc;
 
-	// make local copy @@@ syscall for concurrency?
-	memcpy(&lkstat, &kstat, sizeof(lkstat));
-
-	printf("ISR recursions prevented: %d\r\n", lkstat.isr_recursion);
+	rc = kstat_get(&lkstat);
+	if (rc != 9) {	// @@@ FIXME can not detect correct retval
+		printf("kstat_get: %d\r\n", rc);
+	} else {
+		printf("ISR recursions prevented: %d\r\n",lkstat.isr_recursion);
+	}
 }
 
 struct command {

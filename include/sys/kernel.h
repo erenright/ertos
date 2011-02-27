@@ -10,10 +10,6 @@
 #define clkticks_to_ms(x) (x * 10)
 #define ms_to_clkticks(x) ((unsigned)x / 10)
 
-struct kstat {
-	uint32_t isr_recursion;
-};
-
 extern struct kstat kstat;
 
 // The number of times the timer interrupt has ticked

@@ -5,7 +5,8 @@ OBJS	= \
 	stdio.o \
 	sleep.o \
 	syscall_arm.o \
-	math.o
+	math.o \
+	kstat.o
 
 all: lib.o
 

@@ -1,6 +1,7 @@
 #include <types.h>
 #include <sys/sched.h>
 #include <sys/kernel.h>
+#include <kstat.h>
 
 #include "../arch/regs.h"
 

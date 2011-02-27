@@ -11,6 +11,7 @@
 #include <sys/kernel.h>
 
 #include <stdio.h>
+#include <kstat.h>
 
 #include "../user/processes.h"
 

@@ -12,4 +12,4 @@ Bugs:
 
 - TODO: implement cons_write/read as syscalls.
 
-- Expose kstat via system call
+- Returning values from syscalls does not work (returns syscall number)
