@@ -18,7 +18,9 @@ void c_irq(void)
 	handler = (void *)inl(VIC1VectAddr);
 
 	// Service the interrupt
-	if (handler != NULL)
+	if (handler == arm_irq_entry)
+		++kstat.isr_recursion;
+	else if (handler != NULL)
 		handler();
 
 	// Notify VIC1 that we have processed the interrupt
@@ -57,7 +59,7 @@ int register_irq_handler(int irq, void *handler, int fast)
 		irq -= 32;
 		addr = (uint32_t *)VIC2VectAddr0;
 		ctrl = (uint32_t *)VIC2VectCntl0;
-		sel  = (uint32_t *)VIC1IntSelect;
+		sel  = (uint32_t *)VIC2IntSelect;
 	} else {
 		return -1;
 	}

@@ -12,6 +12,11 @@ enum proc_state {
 	PROC_KILLED,				// Has been killed
 };
 
+enum proc_mode {
+	PROC_USER = 0,				// Normal user-space
+	PROC_SYSTEM,				// Kernel/priviledged task
+};
+
 struct proc {
 	struct list	list;			// For scheduling
 
@@ -21,6 +26,8 @@ struct proc {
 	// WARNING: irq.s context switching depends on this offset!
 	uint32_t	regs[17];		// Register set
 	uint32_t	backup_regs[17];	// Backup register set
+
+	enum proc_mode	mode;			// Task mode
 
 	uint32_t	*stack;			// Current stack
 	void		*stack_base;		// Stack base address
@@ -49,6 +56,6 @@ struct proc {
 };
 
 // kernel/sched.c
-struct proc * spawn(void (*entry)(void), const char *name);
+struct proc * spawn(void (*entry)(void), const char *name, enum proc_mode mode);
 
 #endif // !_SYS_PROC_H

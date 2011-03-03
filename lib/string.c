@@ -19,6 +19,24 @@ void memcpy(void *dest, const void *src, size_t n)
 	}
 }
 
+void memmove(void *dest, const void *src, size_t n)
+{
+	char *d = (char *)dest;
+	char *s = (char *)src;
+
+	// If dest is before src, we can use memcpy
+	if (dest < src)
+		return memcpy(dest, src, n);
+
+	// Otherwise we must perform a reverse memcpy
+	s += n - 1;
+	d += n - 1;
+	while (n) {
+		*d-- = *s--;
+		--n;
+	}
+}
+
 char *strcpy(char *dest, const char *src)
 {
 	char *r = dest;

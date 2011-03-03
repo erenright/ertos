@@ -352,14 +352,31 @@ arm_da_entry:
 	mrs	r0, spsr
 	and	r0, r0, #MODE_MASK
 	cmp	r0, #USR_MODE			@ was this a user-mode error?
-	bne	.Ldogeneric			@ no
+	beq	.Lhandleuserfault		@ yes
+	cmp	r0, #SYS_MODE			@ was this a system-mode error?
+	beq	.Lhandlesysfault
 
-	@ Yes, handle it
+	b	.Ldogeneric
+
+.Lhandlesysfault:
 	mov	r0, sp				@ remember current sp
 	ldr	sp, =cur			@ load ptr to current task
 	ldr	sp, [sp]
-	cmp	sp, #0
-	beq	.Ldogeneric			@ fatal: no current task!
+	add	sp, sp, #16			@ +(4*4) for proc->regs
+
+	mrs	r1, spsr
+	stmia	sp!, {r1,r14}			@ store spsr and lr
+	stmia	sp!, {r0-r14}			@ store user regs
+
+	mov	sp, r0				@ restore irq stack
+
+	bl	_system_page_fault
+	b	.Lhandlingdone
+
+.Lhandleuserfault:
+	mov	r0, sp				@ remember current sp
+	ldr	sp, =cur			@ load ptr to current task
+	ldr	sp, [sp]
 	add	sp, sp, #16			@ +(4*4) for proc->regs
 
 	mrs	r1, spsr
@@ -368,6 +385,8 @@ arm_da_entry:
 
 	mov	sp, r0				@ restore irq stack
 	bl	_user_page_fault		@ handle page fault
+
+.Lhandlingdone:
 
 	@@@@ enable irq
 	mrs	r0, cpsr

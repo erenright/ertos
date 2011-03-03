@@ -41,11 +41,14 @@ static int init_self(struct self *s)
 	return 0;
 }
 
-struct proc * do_spawn(void (*entry)(void), const char *name)
+struct proc * do_spawn(void (*entry)(void), const char *name, enum proc_mode mode)
 {
 	struct proc *proc = NULL;
 	uint32_t *rptr;
 	uint32_t spsr = 0x10; // USR mode @@@ arch specific!
+
+	if (mode == PROC_SYSTEM)
+		spsr = 0x1F;	// SYS mode @@@ arch specific!
 
 	// @@@ shouldn't mix memory regions, proc stucts and proc stacks
 	proc = malloc(sizeof(struct proc));
@@ -120,11 +123,11 @@ out_err:
 	return NULL;
 }
 
-struct proc * spawn(void (*entry)(void), const char *name)
+struct proc * spawn(void (*entry)(void), const char *name, enum proc_mode mode)
 {
 	struct proc *proc;
 
-	proc = do_spawn(entry, name);
+	proc = do_spawn(entry, name, mode);
 	if (proc != NULL) {
 		cli(); // @@@ spin lock, save irq mask, etc
 		if (procs == NULL)
@@ -277,7 +280,7 @@ void sched_init(void)
 	self = kernel_self;
 
 	//idle_task = do_spawn(idle, PROC_SVC);
-	idle_task = do_spawn(idle, "[idle]");
+	idle_task = do_spawn(idle, "[idle]", PROC_SYSTEM);
         idle_task->state = PROC_SLEEP;
 	if (idle_task == NULL) {
 		cons_write(sched_init_err, sizeof(sched_init_err));

@@ -20,7 +20,13 @@ struct kstat kstat;
 // arch/init.c
 void arch_init(void);
 
-static void run_boot_processes(void)
+// arch/eth.c
+void ep9301_eth_init(void);
+
+// net/dll/eth.c
+int eth_init(void);
+
+void run_boot_processes(void)
 {
 	struct proc *kproc;
 	struct user_process *uproc;
@@ -30,7 +36,7 @@ static void run_boot_processes(void)
 	for (i = 0; boot_processes[i].main != NULL; ++i) {
 		uproc = &boot_processes[i];
 
-		kproc = spawn(uproc->main, uproc->name);
+		kproc = spawn(uproc->main, uproc->name, PROC_USER);
 		if (kproc)
 			printf("spawned task \"%s\": %x @ %x (p %x, sb %x, s %x)\r\n",
 				uproc->name,
@@ -55,6 +61,14 @@ struct self _kernel_self = {
 
 struct self *kernel_self = &_kernel_self;
 
+struct mem_desc {
+	int	least_remaining;// Least number of remaining chunks ever seen
+	int	size;		// Chunk size
+	struct bfifo *allocations;	// Allocated memory regions
+};
+
+extern struct mem_desc *mem_desc[];
+
 // Main kernel entry point. Perform initialization here.
 int main(void)
 {
@@ -74,6 +88,9 @@ int main(void)
 	printf("Heap is 0x%x+0x%x\r\n",
 		_heap_start, _heap_size);
 	printf("Kernel self is 0x%x\r\n", kernel_self);
+
+	ep9301_eth_init();
+	eth_init();
 
 	run_boot_processes();
 

@@ -5,7 +5,7 @@ AS	= $(CROSS)as
 LD	= $(CROSS)ld
 OBJCOPY	= $(CROSS)objcopy
 
-CFLAGS	= -Wall -Werror -fpic -ffreestanding -ggdb -I../include
+CFLAGS	= -Wall -Werror -fpic -ffreestanding -ggdb -I/home/eric/src/ertos/include
 #CFLAGS	= -Wall -fpic -ffreestanding -ggdb -I../include
 
 .c.o:

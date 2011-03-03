@@ -65,6 +65,26 @@ void _user_page_fault(void)
 	user_page_fault(far);
 }
 
+// Called from arm_da_entry when a Data Abort exception was generated
+// from SYS_mode
+void _system_page_fault(void)
+{
+	uint32_t fsr;
+	void *far;
+
+	asm(	"mrc	p15, 0, %[fsr], c5, c0, 0	\r\n"
+		"mrc	p15, 0, %[far], c6, c0, 0	\r\n"
+		: [fsr] "=r" (fsr),
+		  [far] "=r" (far)
+	);
+
+	fsr &= FSR_FAULT_MASK;
+
+	printf("_system_page_fault: %s\r\n", fsr_faults[fsr]);
+
+	user_page_fault(far);
+}
+
 #define mmu_invalidate_caches() \
 	asm(	"mov	r1, #0			\r\n"	\
 		"mcr	p15, 0, r1, c7, c7, 0	\r\n"	\

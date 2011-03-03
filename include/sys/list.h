@@ -26,6 +26,18 @@ static inline void list_add_after(void *list, void *add)
 	l->next = a;
 }
 
+static inline void list_remove(void *rem)
+{
+	struct list *l = (struct list *)rem;
+
+	if (l->prev != NULL)
+		l->prev->next = l->next;
+	if (l->next != NULL)
+		l->next->prev = l->prev;
+}
+
+#define list_empty(l) ((l)->next == NULL)
+
 // A "bounded" list
 struct bfifo {
 	int	head;

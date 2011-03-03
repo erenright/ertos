@@ -7,7 +7,8 @@ OBJS	= \
 	sem.o \
 	cpu.o \
 	mmu.o \
-	misc.o
+	misc.o \
+	eth.o
 
 all: arch.o
 

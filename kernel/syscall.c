@@ -46,8 +46,6 @@ int sys_wake(uint32_t *args)
 		proc->state = PROC_RUN;
 	}
 
-	request_schedule();
-
 	return 0;
 }
 
@@ -135,7 +133,25 @@ static int sys_kstat(uint32_t *arg)
 {
 	struct kstat *uptr = (struct kstat *)*arg;
 
-	memcpy(uptr, &kstat, sizeof(struct kstat));
+	memset(uptr, 0, sizeof(struct kstat));
+
+	return 0;
+}
+
+static int sys_netstat(uint32_t *arg)
+{
+	struct netstat *uptr = (struct netstat *)*arg;
+	struct en_eth_if *eth_if;
+
+	memset(uptr, 0, sizeof(struct netstat));
+
+	eth_if = (struct en_eth_if *)eth_if_list.next;
+	if (eth_if != NULL) {
+		strcpy(uptr->eth.name, eth_if->name);
+		memcpy(&uptr->eth.stats, &eth_if->stats, sizeof(uptr->eth.stats));
+	} else {
+		printf("eth_if is null?\r\n");
+	}
 
 	return 0;
 }
@@ -151,6 +167,7 @@ static void *syscall_table[] = {
 	sys_utt_done,	// 7
 	sys_reset,	// 8
 	sys_kstat,	// 9
+	sys_netstat,	// 10
 };
 
 int c_svc(uint32_t num, uint32_t *regs)

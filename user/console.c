@@ -198,6 +198,28 @@ static void cmd_kstat(int argc, char *arg[])
 	}
 }
 
+static void cmd_netstat(int argc, char *argv[])
+{
+	struct netstat netstat;
+	int rc;
+
+	rc = netstat_get(&netstat);
+	if (rc != 10) { // @@@ FIXME can not detect correct retval
+		printf("netstat_get: %d\r\n", rc);
+	} else {
+		//if (netstat.eth.name[0] != '\0') {
+			puts(netstat.eth.name);
+			printf("\tBytes received:  %d\r\n", netstat.eth.stats.rx_bytes);
+			printf("\tBytes sent:      %d\r\n", netstat.eth.stats.tx_bytes);
+			printf("\tFrames received: %d\r\n", netstat.eth.stats.rx_frames);
+			printf("\tFrames sent:     %d\r\n", netstat.eth.stats.tx_frames);
+			printf("\tRunts:           %d\r\n", netstat.eth.stats.runts);
+			printf("\tOversized:       %d\r\n", netstat.eth.stats.oversized);
+			printf("\tFCS errors:      %d\r\n", netstat.eth.stats.fcs_errors);
+		//}
+	}
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -213,6 +235,7 @@ struct command commands[] = {
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
 	{ "kstat", cmd_kstat, "dump kernel statistics" },
+	{ "netstat", cmd_netstat, "dump network statistics" },
 	{ "ps", cmd_ps, "list running processes" },
 	{ "reset", cmd_reset, "reset the system" },
 	{ NULL, NULL }

@@ -11,3 +11,5 @@ Bugs:
 - TODO: implement cons_write/read as syscalls.
 
 - Returning values from syscalls does not work (returns syscall number)
+
+- Ethernet MAC interrupts do not work, and must be polled instead. Why?

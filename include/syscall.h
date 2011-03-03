@@ -13,6 +13,7 @@
 #define SYS_UTT_DONE		7
 #define SYS_RESET		8
 #define SYS_KSTAT		9
+#define SYS_NETSTAT		10
 
 // syscall_arm.s
 #define _syscall(num) __syscall(num, 0)

@@ -178,7 +178,7 @@ _cstartup:
 
 	mrc	p15, 0, r1, c1, c0, 0
 	orr	r1, r1, #4		@ enable D-cache
-	orr	r1, r1, #(1 << 12)	@ enable I-cache
+	@orr	r1, r1, #(1 << 12)	@ enable I-cache
 	orr	r1, r1, #1		@ MMU
 	mcr	p15, 0, r1, c1, c0, 0
 #endif /* ENABLE_MMU */
