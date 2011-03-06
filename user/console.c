@@ -248,6 +248,29 @@ static void cmd_arp(int argc, char *argv[])
 	}
 }
 
+static void cmd_ifconfig(int argc, char *argv[])
+{
+	struct list *p, *p2;
+	struct en_eth_if *eth_if;
+	struct ip_desc *ip;
+
+	for (p = eth_if_list.next; p != NULL; p = p->next) {
+		eth_if = (struct en_eth_if *)p;
+
+		puts(eth_if->name);
+
+		for (p2 = eth_if->ip_addrs.next; p2 != NULL; p2 = p2->next) {
+			ip = (struct ip_desc *)p2;
+
+			printf("\taddress %d.%d.%d.%d\r\n",
+				(ip->addr.addr & 0xFF000000) >> 24,
+				(ip->addr.addr & 0x00FF0000) >> 16,
+				(ip->addr.addr & 0x0000FF00) >> 8,
+				(ip->addr.addr & 0x000000FF));
+		}
+	}
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -263,6 +286,7 @@ struct command commands[] = {
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
+	{ "ifconfig", cmd_ifconfig, "configure Ethernet interfaces" },
 	{ "kstat", cmd_kstat, "dump kernel statistics" },
 	{ "netstat", cmd_netstat, "dump network statistics" },
 	{ "ps", cmd_ps, "list running processes" },
