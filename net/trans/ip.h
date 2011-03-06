@@ -74,5 +74,6 @@ struct en_ip_route {
 int en_ip_input(struct en_net_pkt *);
 int en_ip_output(struct en_net_pkt *, uint32_t dst);
 struct en_ip_route * en_ip_route_lookup(uint32_t dst);
+int en_ip_route_add(struct en_ip_route *newrt);
 
 #endif /* ! _TRANS_IP_H */

@@ -1,7 +1,12 @@
+#include <sys/sched.h>
+
 #include "ip.h"
 #include "icmp.h"
+#include "../dll/arp.h"
 
 #include <stdio.h>
+
+#define IP_TTL	64
 
 /*
  * Globals
@@ -12,7 +17,15 @@ static struct list en_ip_route_list = {
 	.next = NULL
 };
 
-static int ip_id = 0;
+/*static struct list en_ip_pkt_arp_queue = {
+	.prev = NULL,
+	.next = NULL
+};
+
+static struct list en_ip_pkt_output_queue = {
+	.prev = NULL,
+	.next = NULL
+};*/
 
 // @@@ static spinlock_t en_ip_route_lock = SPIN_LOCK_UNLOCKED;
 
@@ -39,7 +52,9 @@ static int ip_id = 0;
 int en_ip_output(struct en_net_pkt *pkt, uint32_t dst)
 {
 	struct en_ip_hdr ip;
-	struct en_ip_route *rt;
+	struct en_ip_route *rt = NULL;
+	struct en_arp_entry *arp;
+	uint16_t sum;
 
 	// First things firt, we need a route
 	rt = en_ip_route_lookup(dst);
@@ -51,15 +66,28 @@ int en_ip_output(struct en_net_pkt *pkt, uint32_t dst)
 	memset(&ip, 0, sizeof(ip));
 
 	// Fill in header in network byte order
-	ip.len = en_ntohs(pkt->len);
-	ip.id = en_ntohs(ip_id);
-	++ip_id;
-	ip.frag_offset = 0;
-	ip.cksum = en_ntohl(ip.cksum);
-	ip.src = en_ntohl(ip.src);
-	ip.dst = en_ntohl(ip.dst);
+	ip.ihl = 5;	// 20 bytes
+	ip.version = 4;	// IPv4
+	ip.len = en_ntohs(pkt->len + sizeof(struct en_ip_hdr)); // @@@ use pkt_add to add the header to the packet immediately, and then initialize pointers for this work
+	ip.ttl = IP_TTL;
+	ip.proto = IP_PROTO_ICMP;
+	memcpy(&ip.src,&((struct ip_desc *)rt->eth_if->ip_addrs.next)->addr, 4);
+	ip.src = en_htonl(ip.src);
+	ip.dst = en_htonl(dst);
+	sum = ocksum16(&ip, ip.ihl * 4);
+	ip.cksum = ~sum;	// invert
 
-	//en_eth_output(rt->eth_if, pkt, @@@, ETH_TYPE_IPV4);
+	arp = en_arp_cache_lookup((struct ip_addr *)&dst);
+	if (arp == NULL) {
+		// Cache miss, request ARP lookup
+		en_arp_request(rt->eth_if, dst);
+
+		// @@@ FIXME queue packet
+	} else {
+		// Good to go, output packet
+		pkt_add_head(pkt, &ip, sizeof(ip));
+		en_eth_output(rt->eth_if, pkt, &arp->hrd_addr, ETH_TYPE_IPV4);
+	}
 
 	return 0;
 }
@@ -131,7 +159,6 @@ int en_ip_input(struct en_net_pkt *pkt)
 		break;
 
 	default:
-		printf(__FILE__ ": received unknown message: %x\r\n", ip->proto);
 		break;
 	}
 
@@ -177,13 +204,13 @@ int en_ip_route_add(struct en_ip_route *newrt)
 
 			/* Yes, forbid addition */
 			// @@@ rc = -EEXIST;
-			return -1;
+			rc = -1;
 			goto out;
 		}
 	}
 
 	/* The route does not exist; add it */
-	list_add_after(&newrt->list, &en_ip_route_list);
+	list_add_after(&en_ip_route_list, newrt);
 
 out:
 	// @@@ spin_unlock_irq(&en_ip_route_lock);
@@ -264,3 +291,28 @@ struct en_ip_route * en_ip_route_lookup(uint32_t dst)
 	return bestrt;
 }
 
+static void ip_tx_task(void)
+{
+	while (1) {
+		// Wait until we have a job to perform
+
+		// Run the arp queue first since it may result in an addition
+		// to the output queue
+	
+		// Run the output queue
+	}
+}
+
+int en_ip_init(void)
+{
+	struct proc *p;
+
+	// Start up the IP tx task
+	p = spawn(ip_tx_task, "[ip_tx]", PROC_SYSTEM);
+	if (p == NULL) {
+		printf("Failed to spawn ip_tx task\r\n");
+		return -1;
+	}
+
+	return 0;
+}

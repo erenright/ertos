@@ -28,7 +28,11 @@ struct en_arp_entry {
 	unsigned long	created;	/* Time created (jiffies)	*/
 };
 
+struct list arp_cache_list;
+
 int en_arp_input(struct en_net_pkt *pkt);
+struct en_arp_entry * en_arp_cache_lookup(struct ip_addr *ip_addr);
+int en_arp_request(struct en_eth_if *dev, uint32_t addr);
 
 #define ARP_HRD_ETHERNET	1
 

@@ -130,6 +130,7 @@ void en_eth_output(struct en_eth_if *eth_if, struct en_net_pkt *pkt,
  */
 extern struct list eth_if_list;
 // @@@ extern spinlock_t eth_if_list_lock;
+struct mac_addr mac_addr_bcast;
 
 /*
  * Inlines

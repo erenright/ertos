@@ -5,15 +5,15 @@
 #include <types.h>
 
 #define en_ntohs(x) ((uint16_t)( \
-	  ((x & 0xff00) >> 8) \
-	| ((x & 0x00ff) << 8) \
+	  (((x) & 0xff00) >> 8) \
+	| (((x) & 0x00ff) << 8) \
 	))
 
 #define en_ntohl(x) ((uint32_t)( \
-	  ((x & 0xff000000) >> 24) \
-	| ((x & 0x00ff0000) >> 8) \
-	| ((x & 0x0000ff00) << 8) \
-	| ((x & 0x000000ff) << 24) \
+	  (((x) & 0xff000000) >> 24) \
+	| (((x) & 0x00ff0000) >> 8) \
+	| (((x) & 0x0000ff00) << 8) \
+	| (((x) & 0x000000ff) << 24) \
 	))
 
 #define en_htons(x) en_ntohs(x) 

@@ -13,28 +13,27 @@ void *memset(void *s, int c, size_t n)
 
 void memcpy(void *dest, const void *src, size_t n)
 {
-	while (n) {
+	if (dest == src)
+		return;
+
+	while (n--)
 		*(char *)dest++ = *(char *)src++;
-		--n;
-	}
 }
 
 void memmove(void *dest, const void *src, size_t n)
 {
-	char *d = (char *)dest;
-	char *s = (char *)src;
+	if (dest == src)
+		return;
 
 	// If dest is before src, we can use memcpy
 	if (dest < src)
 		return memcpy(dest, src, n);
 
 	// Otherwise we must perform a reverse memcpy
-	s += n - 1;
-	d += n - 1;
-	while (n) {
-		*d-- = *s--;
-		--n;
-	}
+	src += n - 1;
+	dest += n - 1;
+	while (n--)
+		*(char *)dest-- = *(char *)src--;
 }
 
 char *strcpy(char *dest, const char *src)

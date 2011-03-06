@@ -26,13 +26,14 @@
 #define ARP_DST_PROTO_OFFSET(arp) \
 	((arp->ar_hlen * 2) + arp->ar_plen)
 
-static struct list arp_cache_list = {
+struct list arp_cache_list = {
 	.next = NULL,
 	.prev = NULL
 };
 
 // @@@ static spinlock_t arp_cache_lock = SPIN_LOCK_UNLOCKED;
 
+#if 0
 static void dump_arp(struct en_arp_pkt *arp)
 {
 	int i;
@@ -54,6 +55,7 @@ static void dump_arp(struct en_arp_pkt *arp)
 	printf("dst %d.%d.%d.%d\r\n",
 		p[i+0], p[i+1], p[i+2], p[i+3]);
 }
+#endif
 
 /*---------------------------------------------------------------------
  * en_arp_cache_lookup()
@@ -68,14 +70,13 @@ static void dump_arp(struct en_arp_pkt *arp)
  *
  *	A pointer to the cache entry, or NULL if not found.
  */
-static struct en_arp_entry * en_arp_cache_lookup(struct ip_addr *ip_addr)
+struct en_arp_entry * en_arp_cache_lookup(struct ip_addr *ip_addr)
 {
 	struct list *p;
 	struct en_arp_entry *ep = NULL;
 
 	/* Does this pair exist in the cache? */
-	for (p = &arp_cache_list; p->prev != NULL && p != NULL; p = p->next) {
-
+	for (p = arp_cache_list.next; p != NULL; p = p->next) {
 		ep = (struct en_arp_entry *)p;
 
 		/* Hit? */
@@ -104,7 +105,54 @@ static struct en_arp_entry * en_arp_cache_lookup(struct ip_addr *ip_addr)
 static void inline en_arp_cache_add(struct en_arp_entry *e)
 {
 	e->created = clkticks;
-	list_add_after(e, &arp_cache_list);
+	list_add_after(&arp_cache_list, e);
+}
+
+// Request a MAC address
+int en_arp_request(struct en_eth_if *dev, uint32_t addr)
+{
+	struct en_net_pkt *pkt;
+	struct en_arp_pkt *arp;
+	struct en_arp_entry *entry;
+	uint32_t ip;
+	int arpsz = sizeof(struct en_arp_pkt) - 1
+		+ (6 * 4)	// hlen
+		+ (4 * 2);	// plen
+
+	pkt = pkt_alloc(arpsz + sizeof(struct en_eth_mac_hdr));
+
+	if (pkt == NULL) {
+		printf("Unable to allocate ARP request\r\n");
+		return -1;
+	}
+
+	arp = (struct en_arp_pkt *)pkt->data;
+	entry = (struct en_arp_entry *)arp->data;
+
+	// Construct ARP request
+	arp->ar_hrd = en_htons(ARP_HRD_ETHERNET);
+	arp->ar_proto = en_htons(ETH_TYPE_IPV4);
+	arp->ar_hlen = 6;	// MAC byte size
+	arp->ar_plen = 4;	// IPv4 byte size
+	arp->ar_opcode = en_htons(ARP_OP_REQUEST);
+
+	memset(arp->data + ARP_DST_HRD_OFFSET(arp), 0xFF, 6); // broadcast
+	memcpy(arp->data + ARP_SRC_HRD_OFFSET(arp), dev->addr.addr, 6); //src
+	ip = addr;
+	ip = en_ntohl(ip);
+	memcpy(arp->data + ARP_DST_PROTO_OFFSET(arp), &ip, 4); // required IP
+	ip = ((struct ip_desc *)dev->ip_addrs.next)->addr.addr;
+	ip = en_ntohl(ip);
+	memcpy(arp->data + ARP_SRC_PROTO_OFFSET(arp),
+		&ip,
+		4); // first IP on this MAC
+
+	// @@@ should use pkt_add_head
+	pkt->len = arpsz;
+
+	en_eth_output(dev, pkt, &mac_addr_bcast, ETH_TYPE_ARP);
+
+	return 0;
 }
 
 /*---------------------------------------------------------------------
@@ -153,8 +201,8 @@ static int en_arp_input_request(struct en_net_pkt *pkt)
 	/* Did we find it? */
 	if (ipd != NULL) {
 		/* Yes, eth_if is the owning interface */
-		printf("%s: ARP request hit\r\n", eth_if->name);
-		dump_arp(arp);
+		//printf("%s: ARP request hit\r\n", eth_if->name);
+		//dump_arp(arp);
 
 		/* Refactor the request packet into a reply */
 		arp->ar_opcode = ARP_OP_REPLY;
@@ -170,8 +218,8 @@ static int en_arp_input_request(struct en_net_pkt *pkt)
 		addr = en_htonl(addr);
 		memcpy(arp->data + ARP_SRC_PROTO_OFFSET(arp), &addr, sizeof(addr));
 
-		printf(__FILE__ ": reply with: \r\n");
-		dump_arp(arp);
+		//printf(__FILE__ ": reply with: \r\n");
+		//dump_arp(arp);
 
 		memcpy(mac.addr, arp->data + ARP_DST_HRD_OFFSET(arp), arp->ar_hlen);
 
@@ -217,8 +265,8 @@ static int en_arp_input_reply(struct en_net_pkt *pkt)
 
 	memset(&e, 0, sizeof(e));
 
-	memcpy(e.hrd_addr.addr, &arp->data[ARP_SRC_HRD_OFFSET(arp)], arp->ar_hlen);
-	e.proto_addr.addr = (uint32_t)arp->data[ARP_SRC_PROTO_OFFSET(arp)];
+	memcpy(e.hrd_addr.addr, &arp->data[ARP_SRC_HRD_OFFSET(arp)], 6);
+	memcpy(&e.proto_addr.addr, &arp->data[ARP_SRC_PROTO_OFFSET(arp)], 4);
 	e.proto_addr.addr = en_ntohl(e.proto_addr.addr);
 
 	//printf(__FILE__ ": received ARP reply:\n");
@@ -314,12 +362,10 @@ int en_arp_input(struct en_net_pkt *pkt)
 
 	switch (arp->ar_opcode) {
 	case ARP_OP_REQUEST:
-		printf("en_arp_input: received ARP REQUEST\r\n");
 		en_arp_input_request(pkt);
 		break;
 
 	case ARP_OP_REPLY:
-		printf("en_arp_input: received ARP REPLY\r\n");
 		en_arp_input_reply(pkt);
 		break;
 

@@ -16,6 +16,8 @@
 #include <string.h>
 #include <kstat.h>
 
+#include "../net/dll/arp.h"
+
 // Maximum number of arguments a command may have
 #define MAX_ARGS 8
 
@@ -220,6 +222,32 @@ static void cmd_netstat(int argc, char *argv[])
 	}
 }
 
+static void cmd_arp(int argc, char *argv[])
+{
+	struct list *p;
+	struct en_arp_entry *arp;
+
+	printf("MAC\t\t\tIP\r\n");
+
+	for (p = arp_cache_list.next; p != NULL; p = p->next) {
+		arp = (struct en_arp_entry *)p;
+
+		printf("%x:%x:%x:%x:%x:%x\t",
+			arp->hrd_addr.addr[0],
+			arp->hrd_addr.addr[1],
+			arp->hrd_addr.addr[2],
+			arp->hrd_addr.addr[3],
+			arp->hrd_addr.addr[4],
+			arp->hrd_addr.addr[5]);
+
+		printf("%d.%d.%d.%d\r\n",
+			(arp->proto_addr.addr & 0xFF000000) >> 24,
+			(arp->proto_addr.addr & 0x00FF0000) >> 16,
+			(arp->proto_addr.addr & 0x0000FF00) >> 8,
+			(arp->proto_addr.addr & 0x000000FF));
+	}
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -231,6 +259,7 @@ static void cmd_help(int, char **);
 struct command commands[] = {
 	{ "?", cmd_help, "synonym for \"help\"" },
 	{ "alarm", cmd_alarm, "test alarm: alarm <msec> <oneshot>" },
+	{ "arp", cmd_arp, "display ARP cache" },
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },

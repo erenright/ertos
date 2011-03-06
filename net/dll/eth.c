@@ -25,6 +25,10 @@ struct list eth_if_list = {
 
 static struct completion rx_completion;
 
+struct mac_addr mac_addr_bcast = {
+	.addr = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }
+};
+
 // @@@ spinlock_t eth_if_list_lock = SPIN_LOCK_UNLOCKED;
 
 /*---------------------------------------------------------------------
@@ -59,7 +63,6 @@ static void en_eth_tx_task(void)
 				pkt = (struct en_net_pkt *)eth_if->tx_queue.next;
 				list_remove(pkt);
 
-				printf("en_eth_tx_task: output\r\n");
 				eth_if->ops->xmit(pkt, eth_if);
 			}
 		}
@@ -230,10 +233,7 @@ static void en_rx_task(void)
  */
 int en_eth_register_if(struct en_eth_if *eth_if)
 {
-	printf(__FILE__ ": registered %s: %x (%d)\r\n",
-		eth_if->name,
-		eth_if->dev_major,
-		eth_if->dev_major);
+	printf(__FILE__ ": registered %s\r\n", eth_if->name);
 
 	/* Add this to our list of interfaces */
 	list_add_after(&eth_if_list, &eth_if->list);

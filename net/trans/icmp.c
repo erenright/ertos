@@ -61,7 +61,6 @@ int en_icmp_input(struct en_net_pkt *pkt)
 
 	switch (icmp->type) {
 	case ICMP_TYPE_ECHO:
-		printf(__FILE__ ": received echo %x %x\r\n", icmp->id, icmp->seqnum);
 		dst = ip->src;
 		icmp->type = ICMP_TYPE_ECHO_REPLY;
 		icmp->id = en_htons(icmp->id);
@@ -70,7 +69,7 @@ int en_icmp_input(struct en_net_pkt *pkt)
 		icmp->cksum = en_htons(sum);
 
 		// ip and icmp data pointers become invalid after this
-		pkt_del_head(pkt, sizeof(struct en_icmp_hdr));
+		pkt_del_head(pkt, sizeof(struct en_ip_hdr));
 
 		en_ip_output(pkt, dst);
 
