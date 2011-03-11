@@ -69,8 +69,11 @@ struct mem_desc {
 
 extern struct mem_desc *mem_desc[];
 
+// kernel/sched.c
+void idle(void);
+
 // Main kernel entry point. Perform initialization here.
-int main(void)
+void main(void)
 {
 	// Interrupts are disabled upon entry
 
@@ -97,9 +100,7 @@ int main(void)
 	// Initial procs are ready, enable the scheduler
 	enable_scheduler();
 
-	while (1) {
-		// This is reached only very briefly. Once the first interrupt
-		// occurs, the system idle task will replace this if there is
-		// no task to schedule.
-	}
+	// Enter the idle task.  The scheduler will take care of everything
+	// from here.
+	idle();
 }

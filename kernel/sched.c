@@ -257,19 +257,14 @@ out:
 	_need_reschedule = 0;
 }
 
+// arch/cpu.S
+void cpu_idle(void);
+
 // Idle task
 void idle(void)
 {
-	//static volatile uint8_t *leds = (uint8_t *)0x80840020;
-	//int c = 0;
-
 	while (1) {
-		/*if (++c >= 100000) {
-			c = 0;
-			*leds ^= 0x03;
-		}*/
-		//*leds ^= 0x02;
-		yield();
+		cpu_idle();
 	}
 }
 
