@@ -48,6 +48,7 @@ struct en_ip_hdr {
 #define IP_FLAG_MF	0x04		/* 0/1: More Frags/No Frags	*/
 
 #define IP_PROTO_ICMP	0x01
+#define IP_PROTO_UDP	0x11
 
 /*
  * An IP route

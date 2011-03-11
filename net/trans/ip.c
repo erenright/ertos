@@ -2,6 +2,7 @@
 
 #include "ip.h"
 #include "icmp.h"
+#include "udp.h"
 #include "../dll/arp.h"
 
 #include <stdio.h>
@@ -144,8 +145,18 @@ int en_ip_input(struct en_net_pkt *pkt)
 	ip->dst = en_ntohl(ip->dst);
 
 	/* Validate length fields */
+
+	// If the pkt length is 46 (60 byte Ethernet minimum minus Ethernet
+	// header), then force the pkt len to be the IP len.  This is
+	// necessary because the Ethernet layer does not strip out padding.
+	if (pkt->len == 46 && ip->len < 46)
+		pkt->len = ip->len;
+
 	if (ip->ihl < 5 || ip->len != pkt->len) {
 		printf(__FILE__ ": dropped packet with invalid length\r\n");
+		printf("ip->ihl: %d\r\n", ip->ihl);
+		printf("ip->len: %d\r\n", ip->len);
+		printf("pkt->len: %d\r\n", pkt->len);
 		// @@@ rc = -EINVAL;
 		return -1;
 		goto out_free;
@@ -156,6 +167,10 @@ int en_ip_input(struct en_net_pkt *pkt)
 	switch (ip->proto) {
 	case IP_PROTO_ICMP:
 		en_icmp_input(pkt);
+		break;
+
+	case IP_PROTO_UDP:
+		en_udp_input(pkt);
 		break;
 
 	default:

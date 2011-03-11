@@ -2,7 +2,8 @@ include ../../Makefile.inc
 
 OBJS	= \
 	icmp.o \
-	ip.o
+	ip.o \
+	udp.o
 
 all: trans.o
 

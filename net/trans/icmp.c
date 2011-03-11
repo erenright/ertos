@@ -22,6 +22,7 @@ struct en_icmp_hdr {
  *
  * 	- handles ICMP messages
  * 	- expects the packet to be an IPv4 packet
+ * 	- expects the IP header to be present
  * 	- expects the packet to arrive in host byte order (IP only)
  * 	- frees the packet if it does not result in a response
  *
