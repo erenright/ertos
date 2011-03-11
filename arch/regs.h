@@ -159,6 +159,15 @@
 #define TXStsQCurLen	(MACBase + 0x00C6)	// TX Status Queue Current Len
 #define TXStsQCurAdd	(MACBase + 0x00C8)	// TX Status Queue Current Addr
 
+#define GPIO_BASE	(REG_BASE + 0x00840000)
+
+#define PADR		(GPIO_BASE + 0x0000)	// Port A Data
+#define PBDR		(GPIO_BASE + 0x0004)	// Port B Data
+#define PCDR		(GPIO_BASE + 0x0008)	// Port C Data
+#define	PADDR		(GPIO_BASE + 0x0010)	// Port A Data Direction
+#define	PBDDR		(GPIO_BASE + 0x0014)	// Port B Data Direction
+#define	PCDDR		(GPIO_BASE + 0x0018)	// Port C Data Direction
+
 
 // Memory accessors
 #define inl(addr) (*((volatile uint32_t *)addr))
