@@ -6,6 +6,8 @@
 // Stolen from host libc
 #include <stdarg.h>
 
+#define CTRL_U	0x15
+
 // Set to true if input should echo characters
 static int echo = 1;
 
@@ -227,6 +229,13 @@ char *gets(char *s, int size)
 
 		case '\b':	// Backspace
 			if (s > orig_s) {
+				_puts("\b \b");
+				--s;
+			}
+			break;
+
+		case CTRL_U:	// Wipe line
+			while (s > orig_s) {
 				_puts("\b \b");
 				--s;
 			}
