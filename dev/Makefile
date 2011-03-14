@@ -1,7 +1,9 @@
 include ../Makefile.inc
 
 OBJS	= \
-	uart.o
+	uart.o \
+	nand.o \
+	hamming.o
 
 all: dev.o
 

@@ -15,6 +15,7 @@
 #include <cons.h>
 #include <string.h>
 #include <kstat.h>
+#include <nand.h>
 
 #include "../net/dll/arp.h"
 
@@ -271,6 +272,226 @@ static void cmd_ifconfig(int argc, char *argv[])
 	}
 }
 
+static void cmd_nand_read_page(int page)
+{
+	char *buf = malloc(NAND_RAW_PAGE_SIZE);
+	int i;
+	int x = 0;
+	int y = 0;
+	int c;
+
+	if (buf == NULL) {
+		printf("Unable to allocate buffer for read\r\n");
+		return;
+	}
+
+	nand_read_page(page, buf);
+
+	for (i = 0, x = 0; i < NAND_RAW_PAGE_SIZE; ++i) {
+		if (x == 0)
+			printf("%x| ", i);
+		else if (x == 4)
+			printf("   ");
+
+		printf("%x ", buf[i]);
+
+		if (++x >= 8) {
+			x = 0;
+			puts("");
+
+			if (++y == 23) {
+				stdio_buf_disable();
+				printf("More...");
+				c = getchar();
+				stdio_buf_enable();
+				puts("");
+
+				y = 0;
+
+				if (c == 'q')
+					break;
+			}
+		}
+	}
+
+	if (x != 0)
+		puts("");
+
+	free(buf);
+}
+
+static void cmd_nand_read(int page, int off, int len)
+{
+	char *buf = malloc(len);
+	int i;
+	int x = 0;
+	int y = 0;
+	int c;
+
+	if (buf == NULL) {
+		printf("Unable to allocate buffer for read\r\n");
+		return;
+	}
+
+	nand_read(page, off, buf, len);
+
+	for (i = 0, x = 0; i < len; ++i) {
+		if (x == 0)
+			printf("%x| ", off + i);
+		else if (x == 4)
+			printf("   ");
+
+		printf("%x ", buf[i]);
+
+		if (++x >= 8) {
+			x = 0;
+			puts("");
+
+			if (++y == 23) {
+				stdio_buf_disable();
+				printf("More...");
+				c = getchar();
+				stdio_buf_enable();
+				puts("");
+
+				y = 0;
+
+				if (c == 'q')
+					break;
+			}
+		}
+	}
+
+	if (x != 0)
+		puts("");
+
+	free(buf);
+}
+
+static void cmd_nand_bbscan(void)
+{
+	int i;
+	uint32_t bad = 0;
+	char status;
+
+	for (i = 0; i < NAND_NUM_PAGES; ++i) {
+		nand_read(i, NAND_PAGE_SIZE, &status, 1);
+
+		// Non-FF is a bad page
+		if (status != 0xFF) {
+			++bad;
+
+			printf("0x%x\r\n");
+		}
+	}
+
+	printf("%d bad pages found\r\n", bad);
+}
+
+static void cmd_nand_eraseblock(int block)
+{
+	int status;
+	int addr = block * NAND_PAGES_PER_BLOCK * NAND_PAGE_SIZE;
+	int c;
+
+	// The first 128kB on the TS-7250 128MB is the bootrom
+	// and the range 0x07D20000+0x40000 is RedBoot, so warn
+	// the user that this could be dangerous
+	if (addr < (128 * 1024)	// bootrom
+		|| (addr >= 0x07D20000 && addr < 0x07D60000)) { // RedBoot
+
+		stdio_buf_disable();
+		printf("This area includes the bootrom or RedBoot. Continue? [y/n] ");
+		c = getchar();
+		stdio_buf_enable();
+		puts("");
+
+		if (c != 'y')
+			return;
+	}
+
+	status = nand_erase(block);
+
+	printf("Erase status for %d to %d: 0x%x\r\n", 
+		addr,
+		addr + (NAND_PAGES_PER_BLOCK * NAND_PAGE_SIZE),
+		status);
+}
+
+static void cmd_nand_fillsect(int page, int sect, int pattern)
+{
+	char *buf;
+	int status, i;
+
+	buf = malloc(512);
+	if (buf == NULL) {
+		printf("cmd_nand_fillsect: failed to allocate buffer\r\n");
+		return;
+	}
+
+	if (pattern > 0xFF) {
+		for (i = 0; i < 512; ++i)
+			buf[i] = i & 0xFF;
+	} else {
+		memset(buf, pattern & 0xFF, 512);
+	}
+
+	status = nand_write_sector(page, sect, buf);
+
+	printf("Program status: 0x%x\r\n", status);
+
+	free(buf);
+}
+
+static void cmd_nand(int argc, char *argv[])
+{
+	if (argc < 2)
+		goto out_err;
+
+	if (!strcmp(argv[1], "reset")) {
+		nand_reset();
+	} else if (!strcmp(argv[1], "readid")) {
+		printf("%x\r\n", nand_read_id());
+	} else if (!strcmp(argv[1], "readpage")) {
+		if (argc != 3)
+			goto out_err;
+
+		cmd_nand_read_page(atoi(argv[2]));
+	} else if (!strcmp(argv[1], "read")) {
+		if (argc != 5)
+			goto out_err;
+
+		cmd_nand_read(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+	} else if (!strcmp(argv[1], "bbscan")) {
+		cmd_nand_bbscan();
+	} else if (!strcmp(argv[1], "eraseblock")) {
+		if (argc != 3)
+			goto out_err;
+
+		cmd_nand_eraseblock(atoi(argv[2]));
+	} else if (!strcmp(argv[1], "fillsect")) {
+		if (argc != 5)
+			goto out_err;
+
+		cmd_nand_fillsect(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+	} else {
+		goto out_err;
+	}
+
+	return;
+
+out_err:
+
+	printf("supported commands:\r\n");
+	printf("\tbbscan\r\n");
+	printf("\teraseblock <block>\r\n");
+	printf("\tread <page> <offset> <len>\r\n");
+	printf("\treadpage <page>\r\n");
+	printf("\treset\r\n");
+	printf("\treadid\r\n");
+	printf("\tfillsect <page> <sect> <pattern>\r\n");
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -288,6 +509,7 @@ struct command commands[] = {
 	{ "help", cmd_help, "list available commands" },
 	{ "ifconfig", cmd_ifconfig, "configure Ethernet interfaces" },
 	{ "kstat", cmd_kstat, "dump kernel statistics" },
+	{ "nand", cmd_nand, "NAND flash operations" },
 	{ "netstat", cmd_netstat, "dump network statistics" },
 	{ "ps", cmd_ps, "list running processes" },
 	{ "reset", cmd_reset, "reset the system" },

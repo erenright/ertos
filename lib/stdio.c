@@ -194,6 +194,25 @@ int printf(char *fmt, ...)
 	return chars;
 }
 
+int getchar(void)
+{
+	char c;
+	int status;
+
+	do {
+		status = cons_read(&c, 1);
+		if (status < 0)
+			return -1;
+
+		if (status == 0) {
+			wait(cons_in_completion);
+			continue;
+		}
+	} while (status == 0);
+
+	return c;
+}
+
 // A hybrid gets() / fgets()
 char *gets(char *s, int size)
 {

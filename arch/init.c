@@ -13,6 +13,7 @@
 
 #include <types.h>
 #include <string.h>
+#include <nand.h>
 
 #include "regs.h"
 
@@ -147,6 +148,8 @@ static void ts7250_init(void)
 	_mmu_remap(	(uint32_t *)0x23800000,			// WDT_CTRL
 			(uint32_t *)0x23800000,
 			MMU_AP_SRW_UNA);
+
+	nand_init();
 }
 
 static void init_interrupts(void)

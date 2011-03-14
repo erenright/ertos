@@ -8,6 +8,18 @@
 
 #define INT_ENABLE		(1 << 5)
 
+#define NAND_DATA		0x60000000		// NAND Flash data
+
+#define NAND_CTRL		0x60400000		// NAND Flash control
+#define NAND_CTRL_ALE		(1)			// Address latch enable
+#define NAND_CTRL_CLE		(1<<1)			// Command latch enable
+#define NAND_CTRL_NCE		(1<<2)			// Chip enable
+#define NAND_CTRL_MASK		0x03
+
+#define NAND_BUSY		0x60800000		// NAND Busy status
+#define NAND_BUSY_BIT		(1<<5)
+
+
 #define REG_BASE		0x80000000
 
 #define VIC1_BASE		(REG_BASE + 0x000B0000)
@@ -175,5 +187,8 @@
 
 #define inw(addr) (*((volatile uint16_t *)addr))
 #define outw(addr, val) (*((volatile uint16_t *)(addr))) = (uint16_t)val
+
+#define inb(addr) (*((volatile uint8_t *)addr))
+#define outb(addr, val) (*((volatile uint8_t *)(addr))) = (uint8_t)val
 
 #endif // !_ARCH_REGS_H

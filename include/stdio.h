@@ -8,5 +8,6 @@ void puts(const char *s);
 void putchar(char c);
 int printf(char *fmt, ...);
 char *gets(char *s, int size);
+int getchar(void);
 
 #endif // !_STDIO_H
