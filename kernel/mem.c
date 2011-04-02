@@ -25,11 +25,7 @@ struct mem_desc {
 };
 
 // These come in from the linker
-extern void *__heap_start__;
-extern void *__heap_end__;
-extern void *__stack_start__;
-extern void *__stack_end__;
-extern void *__end;
+extern void *__end__;
 
 void *_heap_start = NULL;
 size_t _heap_size = 0;
@@ -117,10 +113,7 @@ void mem_init(void)
 	for (i = 0; i < ALLOC_STEPS; ++i)
 		_heap_size += (ALLOC_MIN << i) * ALLOC_NUM;
 
-	// @@@ why does __end come out with the wrong value?
-	// @@@ WARNING this restricts code+data+stack to ~1MB
-	//_heap_start = __end;
-	_heap_start = (void *)0x00200000;
+	_heap_start = &__end__;
 	heap_cur = _heap_start;
 
 	// Initialize descriptors

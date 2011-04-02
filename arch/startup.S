@@ -68,6 +68,18 @@ _reset:
 	.global _cstartup
 	.func _cstartup
 _cstartup:
+#ifdef XIP
+	/* Relocate .data section from ROM to RAM */
+	ldr	r0, =__text_end__
+	ldr	r1, =__data_start__
+	ldr	r2, =__data_end__
+    1:
+	cmp	r1, r2
+	ldmltia	r0!, {r3}
+	stmltia	r1!, {r3}
+	blt	1b
+#endif
+
 	/* Clear .bss */
 	ldr	r1, =__bss_start__
 	ldr	r2, =__bss_end__
@@ -141,6 +153,23 @@ _cstartup:
 	add	r3, r3, #1
 	cmp	r3, #32
 	blt	1b
+
+#ifdef TS_7200
+	add	r1, r1, r3, lsl #2	@ r1 += (r3 * 4)
+
+	/* Map FLASH 1:1 (0x60000000-0x61000000) as 1MB sections */
+	mov	r3, #0			@ start with MB 0
+	ldr	r0, =(0x600 * 4)
+	add	r0, r0, r1
+    1:
+	mov	r2, #(MMU_SECTION | TT_BIT)
+	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
+	orr	r2, r2, r3, lsl #20
+	stmia	r0!, {r2}
+	add	r3, r3, #1
+	cmp	r3, #16
+	blt	1b
+#endif
 
 	/* Map IO 1:1 
 	 * 0x80000000-0x80100000

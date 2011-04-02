@@ -40,6 +40,7 @@ static inline void nand_cmd(int cmd)
 
 void nand_init(void)
 {
+#ifdef ENABLE_MMU
 	// Remap NAND registers to give all modes access
 
 	_mmu_remap(	(uint32_t *)NAND_CTRL,
@@ -53,6 +54,7 @@ void nand_init(void)
 	_mmu_remap(	(uint32_t *)NAND_BUSY,
 			(uint32_t *)NAND_BUSY,
 			MMU_AP_SRW_URW);
+#endif
 }
 
 void nand_reset(void)

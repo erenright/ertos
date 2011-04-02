@@ -136,10 +136,11 @@ void _timer_int(void)
 	}
 }
 
-static void ts7250_init(void)
+static void ts72xx_init(void)
 {
-	// Perform TS-7250 specific initialization
+	// Perform TS-72xx specific initialization
 
+#ifdef ENABLE_MMU
 	// Map in system-only hardware resources
 	_mmu_remap(	(uint32_t *)0x23C00000,			// WDT_FEED
 			(uint32_t *)0x23C00000,
@@ -148,8 +149,11 @@ static void ts7250_init(void)
 	_mmu_remap(	(uint32_t *)0x23800000,			// WDT_CTRL
 			(uint32_t *)0x23800000,
 			MMU_AP_SRW_UNA);
+#endif
 
+#ifdef TS_7250
 	nand_init();
+#endif
 }
 
 static void init_interrupts(void)
@@ -235,7 +239,7 @@ void arch_init(void)
 	init_interrupts();
 	init_traps();
 
-	ts7250_init();
+	ts72xx_init();
 
 	// Initialize UART1/console
 	memset(&uart1, 0, sizeof(struct uart));

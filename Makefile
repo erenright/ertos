@@ -14,7 +14,7 @@ OBJS = \
 all: ertos
 
 ertos: $(OBJS)
-	$(LD) -T ertos.ld -o ertos.elf $(OBJS)
+	$(LD) -Map=ertos.map -T ertos.ld -o ertos.elf $(OBJS)
 	$(OBJCOPY) -O binary ertos.elf ertos.bin
 	ls -lh ertos.elf ertos.bin
 
@@ -44,7 +44,7 @@ install:
 	cp ertos.bin $(INSTALLDIR)
 
 clean:
-	rm -f *.o ertos.elf ertos.bin
+	rm -f *.o ertos.elf ertos.bin ertos.map
 	for dir in $(OBJS); do \
 		$(MAKE) -C `basename $$dir .o` clean; \
 	done

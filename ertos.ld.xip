@@ -7,32 +7,54 @@ SVC_STACK_SIZE	= 4096;
 ABT_STACK_SIZE	= 4096;
 UND_STACK_SIZE	= 4096;
 
-HEAP_SIZE	= 0x100000;	/* 1MB heap */
-RAM_START	= 0x00100000;
+HEAP_SIZE	= 0x00100000;	/* 1MB heap */
+
+ROM_START   = 0x01F20000;
+RAM_START   = 0x00100000;
+
+MEMORY
+{
+	rom (rx)    : org = 0x01F20000, len = 128k
+	ram (rwx)   : org = 0x00100000, len = 15M
+}
 
 SECTIONS
 {
-	. = RAM_START;
-	.startup . : { startup.o }
+	.text ROM_START : AT (0)
+	{
+		__text_start__ = . ;
+		startup.o;
+		*(.text);
+		*(.rodata);
 
-	.text : { *(.text) }
+		. = ALIGN(4);
+		__text_end__ = . ;
+	} >rom
 
-	.data : {
+	.data RAM_START : AT ( SIZEOF(.text) )
+	{
+		__data_load__ = __text_end__;
+		__data_start__ = . ;
+
 		KEEP(*(.jcr))
 		*(.got.plt) *(.got)
 		*(.shdata)
 		*(.data .data.* .gnu.linkonce.d.*)
-	}
 
-	.bss : {
+		. = ALIGN(4);
+		__data_end__ = . ;
+	} >ram
+
+	.bss RAM_START + SIZEOF(.data) :
+	{
 		__bss_start__ = .;
-		*(.bss)
+		*(.bss);
+
+		. = ALIGN(4);
 		__bss_end__ = .;
-	}
+	} >ram
 
-	.rodata : { *(.rodata) }
-
-	.stack : {
+	.stack RAM_START + SIZEOF(.data) + SIZEOF(.bss) : {
 		__stack_start__ = .;
 
 		. += IRQ_STACK_SIZE;
