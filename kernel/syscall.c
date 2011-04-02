@@ -138,6 +138,7 @@ static int sys_kstat(uint32_t *arg)
 	return 0;
 }
 
+#ifdef CONFIG_NET
 static int sys_netstat(uint32_t *arg)
 {
 	struct netstat *uptr = (struct netstat *)*arg;
@@ -155,6 +156,7 @@ static int sys_netstat(uint32_t *arg)
 
 	return 0;
 }
+#endif
 
 static void *syscall_table[] = {
 	sys_wait,	// 0
@@ -167,7 +169,9 @@ static void *syscall_table[] = {
 	sys_utt_done,	// 7
 	sys_reset,	// 8
 	sys_kstat,	// 9
+#ifdef CONFIG_NET
 	sys_netstat,	// 10
+#endif
 };
 
 int c_svc(uint32_t num, uint32_t *regs)

@@ -1,4 +1,8 @@
 include ../Makefile.inc
+include ../components
+
+ETH_O-$(CONFIG_NET) += eth.o
+SPI_O-$(CONFIG_SPI) += spi.o
 
 OBJS	= \
 	init.o \
@@ -8,8 +12,8 @@ OBJS	= \
 	cpu.o \
 	mmu.o \
 	misc.o \
-	eth.o \
-	spi.o
+	$(ETH_O-y) \
+	$(SPI_O-y)
 
 all: arch.o
 

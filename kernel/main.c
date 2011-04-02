@@ -92,8 +92,10 @@ void main(void)
 		_heap_start, _heap_size);
 	printf("Kernel self is 0x%x\r\n", kernel_self);
 
+#ifdef CONFIG_NET
 	ep9301_eth_init();
 	eth_init();
+#endif
 
 	run_boot_processes();
 

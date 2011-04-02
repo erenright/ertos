@@ -1,11 +1,13 @@
 include ../Makefile.inc
+include ../components
+
+NAND_O-$(CONFIG_NAND) += nand.o hamming.o
+USB_O-$(CONFIG_USB) += ohci.o usb.o
 
 OBJS	= \
 	uart.o \
-	nand.o \
-	hamming.o \
-	ohci.o \
-	usb.o
+	$(NAND_O-y) \
+	$(USB_O-y)
 
 all: dev.o
 

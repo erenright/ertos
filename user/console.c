@@ -15,13 +15,24 @@
 #include <cons.h>
 #include <string.h>
 #include <kstat.h>
-#include <nand.h>
-#include <spi.h>
-#include <ohci.h>
+
+#ifdef CONFIG_NAND
+#	include <nand.h>
+#endif
+
+#ifdef CONFIG_SPI
+#	include <spi.h>
+#endif
+
+#ifdef CONFIG_USB
+#	include <ohci.h>
+#endif
 
 #include "../arch/regs.h"
 
-#include "../net/dll/arp.h"
+#ifdef CONFIG_NET
+#	include "../net/dll/arp.h"
+#endif
 
 // Maximum number of arguments a command may have
 #define MAX_ARGS 8
@@ -205,6 +216,7 @@ static void cmd_kstat(int argc, char *arg[])
 	}
 }
 
+#ifdef CONFIG_NET
 static void cmd_netstat(int argc, char *argv[])
 {
 	struct netstat netstat;
@@ -275,7 +287,9 @@ static void cmd_ifconfig(int argc, char *argv[])
 		}
 	}
 }
+#endif // CONFIG_NET
 
+#ifdef CONFIG_NAND
 static void cmd_nand_read_page(int page)
 {
 	char *buf = malloc(NAND_RAW_PAGE_SIZE);
@@ -495,7 +509,9 @@ out_err:
 	printf("\treadid\r\n");
 	printf("\tfillsect <page> <sect> <pattern>\r\n");
 }
+#endif // CONFIG_NAND
 
+#ifdef CONFIG_SPI
 static void cmd_spi(int argc, char *argv[])
 {
 	if (argc < 2)
@@ -634,7 +650,9 @@ out_err:
 	printf("\thmm <chip> readpage <page>\r\n");
 	printf("\thmm <chip> status\r\n");
 }
+#endif // CONFIG_SPI
 
+#ifdef CONFIG_USB
 static void cmd_usb(int argc, char *argv[])
 {
 	if (argc < 2)
@@ -653,6 +671,7 @@ out_err:
 	printf("supported commands:\r\n");
 	printf("\tinit\r\n");
 }
+#endif // CONFIG_USB
 
 struct command {
 	const char *name;
@@ -665,19 +684,33 @@ static void cmd_help(int, char **);
 struct command commands[] = {
 	{ "?", cmd_help, "synonym for \"help\"" },
 	{ "alarm", cmd_alarm, "test alarm: alarm <msec> <oneshot>" },
+#ifdef CONFIG_NET
 	{ "arp", cmd_arp, "display ARP cache" },
+#endif
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
+#ifdef CONFIG_SPI
 	{ "hmm", cmd_hmm, "HMM commands" },
+#endif
+#ifdef CONFIG_NET
 	{ "ifconfig", cmd_ifconfig, "configure Ethernet interfaces" },
+#endif
 	{ "kstat", cmd_kstat, "dump kernel statistics" },
+#ifdef CONFIG_NAND
 	{ "nand", cmd_nand, "NAND flash operations" },
+#endif
+#ifdef CONFIG_NET
 	{ "netstat", cmd_netstat, "dump network statistics" },
+#endif
 	{ "ps", cmd_ps, "list running processes" },
 	{ "reset", cmd_reset, "reset the system" },
+#ifdef CONFIG_SPI
 	{ "spi", cmd_spi, "SPI commands" },
+#endif
+#ifdef CONFIG_USB
 	{ "usb", cmd_usb, "USB commands" },
+#endif
 	{ NULL, NULL }
 };
 
