@@ -8,7 +8,8 @@ OBJS	= \
 	cpu.o \
 	mmu.o \
 	misc.o \
-	eth.o
+	eth.o \
+	spi.o
 
 all: arch.o
 

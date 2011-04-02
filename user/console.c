@@ -16,6 +16,10 @@
 #include <string.h>
 #include <kstat.h>
 #include <nand.h>
+#include <spi.h>
+#include <ohci.h>
+
+#include "../arch/regs.h"
 
 #include "../net/dll/arp.h"
 
@@ -492,6 +496,164 @@ out_err:
 	printf("\tfillsect <page> <sect> <pattern>\r\n");
 }
 
+static void cmd_spi(int argc, char *argv[])
+{
+	if (argc < 2)
+		goto out_err;
+
+	if (!strcmp(argv[1], "loopback")) {
+		spi_loopback_test();
+	} else {
+		goto out_err;
+	}
+
+	return;
+
+out_err:
+
+	printf("supported commands:\r\n");
+	printf("\tloopback\r\n");
+}
+
+static void cmd_hmm_cs(int chip, int on)
+{
+	if (chip == 1) {
+		if (on)
+			outl(PCDR, inl(PCDR) & ~0x01);
+		else
+			outl(PCDR, inl(PCDR) | 0x01);
+	} else {
+		if (on)
+			outl(PCDR, inl(PFDR) & ~0x02);
+		else
+			outl(PCDR, inl(PFDR) | 0x02);
+	}
+}
+
+static void cmd_hmm_status(int chip)
+{
+	char cmd[] = { 0xD7 };	// Read Status Register
+	char reg;
+
+	cmd_hmm_cs(chip, 1);
+	
+	spi_write(cmd, sizeof(cmd));
+	spi_read(&reg, 1);
+
+	cmd_hmm_cs(chip, 0);
+
+	printf("Chip %d status: 0x%x\r\n", chip, reg);
+}
+
+static void cmd_hmm_readpage(int chip, int page)
+{
+	int i, x, c;
+	int y = 0;
+
+	char cmd[] = {	0xE8,				// Continuous read cmd
+			0x00, 0x00, 0x00,		// Address
+			0x00, 0x00, 0x00, 0x00 };	// Don't care
+
+	char *buf;
+
+	buf = malloc(528);
+	if (buf == NULL) {
+		printf("Unable to allocate buffer\r\n");
+		goto out;
+	}
+
+	cmd[1] = (page & 0x1FC0) >> 6;
+	cmd[2] = (page & 0x3F) << 2;
+	cmd[3] = 0x00;	// first byte
+
+	cmd_hmm_cs(chip, 1);
+
+	spi_write(cmd, sizeof(cmd));
+	spi_read(buf, 528);
+
+	cmd_hmm_cs(chip, 0);
+
+	for (i = 0, x = 0; i < 528; ++i) {
+		if (x == 0)
+			printf("%x| ", i);
+		else if (x == 4)
+			printf("   ");
+
+		printf("%x ", buf[i]);
+
+		if (++x >= 8) {
+			x = 0;
+			puts("");
+
+			if (++y == 23) {
+				stdio_buf_disable();
+				printf("More...");
+				c = getchar();
+				stdio_buf_enable();
+				puts("");
+
+				y = 0;
+
+				if (c == 'q')
+					break;
+			}
+		}
+	}
+
+out:
+
+	if (buf != NULL)
+		free(buf);
+}
+
+static void cmd_hmm(int argc, char *argv[])
+{
+	int chip;
+
+	if (argc < 3)
+		goto out_err;
+
+	chip = atoi(argv[1]);
+
+	if (!strcmp(argv[2], "status")) {
+		cmd_hmm_status(chip);
+	} else if (!strcmp(argv[2], "readpage")) {
+		if (argc != 4)
+			goto out_err;
+
+		cmd_hmm_readpage(chip, atoi(argv[3]));
+	} else {
+		goto out_err;
+	}
+
+	return;
+
+out_err:
+
+	printf("supported commands:\r\n");
+	printf("\thmm <chip> readpage <page>\r\n");
+	printf("\thmm <chip> status\r\n");
+}
+
+static void cmd_usb(int argc, char *argv[])
+{
+	if (argc < 2)
+		goto out_err;
+
+	if (!strcmp(argv[1], "init")) {
+		ohci_init();
+	} else {
+		goto out_err;
+	}
+
+	return;
+
+out_err:
+
+	printf("supported commands:\r\n");
+	printf("\tinit\r\n");
+}
+
 struct command {
 	const char *name;
 	void (*func)(int, char **);
@@ -507,12 +669,15 @@ struct command commands[] = {
 	{ "dumpmem",cmd_dumpmem, "dump memory location: dumpmem <addr> <len>" },
 	{ "exit", cmd_exit, "exit the console" },
 	{ "help", cmd_help, "list available commands" },
+	{ "hmm", cmd_hmm, "HMM commands" },
 	{ "ifconfig", cmd_ifconfig, "configure Ethernet interfaces" },
 	{ "kstat", cmd_kstat, "dump kernel statistics" },
 	{ "nand", cmd_nand, "NAND flash operations" },
 	{ "netstat", cmd_netstat, "dump network statistics" },
 	{ "ps", cmd_ps, "list running processes" },
 	{ "reset", cmd_reset, "reset the system" },
+	{ "spi", cmd_spi, "SPI commands" },
+	{ "usb", cmd_usb, "USB commands" },
 	{ NULL, NULL }
 };
 

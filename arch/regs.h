@@ -62,6 +62,32 @@
 #define LED_GREEN		0x01
 #define LED_RED			0x02
 
+#define SPI_BASE		(REG_BASE + 0x008A0000)
+
+#define SSPCR0			(SPI_BASE + 0x0000)	// Control register 0
+#define SSPCR0_SCR_MASK		(0xFF00)		// Serial clock rate
+#define SSPCR0_SCR_SHIFT	(1<<8)			// Serial clock rate
+#define SSPCR0_SPH		(1<<7)			// SCLKOUT phase
+#define SSPCR0_SPO		(1<<6)			// SCLKOUT polarity
+#define SSPCR0_FRF_MASK		(0x30)			// Frame format
+#define SSPCR0_FRF_SHIFT	(1<<4)
+#define SSPCR0_FRF_SPI		(0)			// Motorola SPI
+#define SSPCR0_DSS_MASK		(0x0F)
+#define SSPCR0_DSS_SHIFT	(0)
+#define SSPCR0_DSS_8_BIT	(7)
+
+#define SSPCR1			(SPI_BASE + 0x0004)	// Control register 1
+#define SSPCR1_SSE		(1<<4)			// Sync. serial enable
+#define SSPCR1_LBM		(1<<3)			// Loopback mode
+#define SSPDR			(SPI_BASE + 0x0008)	// RX/TX FIFO
+
+#define SSPSR			(SPI_BASE + 0x000C)	// Status register
+#define SSPSR_BSY		(1<<4)			// Busy bit
+
+#define SSPCPSR			(SPI_BASE + 0x0010)	// Clock prescale reg.
+#define SSPIIR			(SPI_BASE + 0x0014)	// Interrupt ID register
+#define SSPICR			(SPI_BASE + 0x0014)	// Interrupt clear reg.
+
 #define UART_BASE		(REG_BASE + 0x008C0000)
 #define UART1Data		(UART_BASE)
 #define UART1LinCtrlHigh	(UART_BASE + 0x0008)
@@ -94,6 +120,7 @@
 #define INT_MAC		39	// Ethernet MAC Interrupt
 #define TC3OI		51	// Timer3 interrupt
 #define INT_UART1	52	// UART1 interrupt
+#define USHINTR		56	// USB Host Interrupt
 
 // Ethernet Controller Registers
 #define MACBase		(REG_BASE + 0x00010000)
@@ -171,6 +198,62 @@
 #define TXStsQCurLen	(MACBase + 0x00C6)	// TX Status Queue Current Len
 #define TXStsQCurAdd	(MACBase + 0x00C8)	// TX Status Queue Current Addr
 
+// USB / OHCI Registers
+
+#define	OHCI_BASE	(REG_BASE + 0x00020000)
+
+#define	HcRevision		(OHCI_BASE + 0x0000)
+
+#define	HcControl		(OHCI_BASE + 0x0004)
+#define HcControl_HCFS_MASK	((1<<7)|(1<<6))
+#define HcControl_USBRESET	(0)
+#define HcControl_USBRESUME	(1<<6)
+#define HcControl_USBOPERATIONAL (2<<6)
+#define HcControl_USBSUSPEND	(3<<6)
+#define HcControl_IR		(1<<8)
+
+#define HcCommandStatus		(OHCI_BASE + 0x0008)
+#define HcCommandStatus_HCR	(1)
+
+#define HcInterruptStatus	(OHCI_BASE + 0x000C)
+
+#define HcInterruptEnable	(OHCI_BASE + 0x0010)
+#define HcInterruptEnable_SF	(1<<2)	// Start of Frame
+#define HcInterruptEnable_RHSC	(1<<6)	// Root hub status change
+#define HcInterruptEnable_OC	(1<<30)	// Ownership change
+#define HcInterruptEnable_MIE	(1<<31)	// Master interrupt enable
+
+#define HcInterruptDisable	(OHCI_BASE + 0x0014)
+#define HcHCCA			(OHCI_BASE + 0x0018)
+#define HcPeriodCurrentED	(OHCI_BASE + 0x001C)
+#define HcControlHeadED		(OHCI_BASE + 0x0020)
+#define HcControlCurrentED	(OHCI_BASE + 0x0024)
+#define HcBulkHeadED		(OHCI_BASE + 0x0028)
+#define HcBulkCurrentED		(OHCI_BASE + 0x002C)
+#define HcDoneHead		(OHCI_BASE + 0x0030)
+
+#define HcFmInterval		(OHCI_BASE + 0x0034)
+#define HcFmInterval_FIT	(1<<31)
+
+#define HcFmRemaining		(OHCI_BASE + 0x0038)
+#define HcFmNumber		(OHCI_BASE + 0x003C)
+#define HcPeriodicStart		(OHCI_BASE + 0x0040)
+#define HcLSThreshold		(OHCI_BASE + 0x0044)
+#define HcRhDescriptorA		(OHCI_BASE + 0x0048)
+#define HcRhDescriptorB		(OHCI_BASE + 0x004C)
+#define HcRhStatus		(OHCI_BASE + 0x0050)
+
+#define HcRhPortStatus1		(OHCI_BASE + 0x0054)
+#define HcRhPortStatus2		(OHCI_BASE + 0x005C)
+#define HcRhPortStatus_CCS	(1)	// Current Connect Status
+#define HcRhPortStatus_CSC	(1<<16)	// Connect Status Change
+
+// ep9301-specific
+#define USBCfgCtrl		(OHCI_BASE + 0x0080)
+#define USBHCISts		(OHCI_BASE + 0x0084)
+
+// GPIO Registers
+
 #define GPIO_BASE	(REG_BASE + 0x00840000)
 
 #define PADR		(GPIO_BASE + 0x0000)	// Port A Data
@@ -179,6 +262,15 @@
 #define	PADDR		(GPIO_BASE + 0x0010)	// Port A Data Direction
 #define	PBDDR		(GPIO_BASE + 0x0014)	// Port B Data Direction
 #define	PCDDR		(GPIO_BASE + 0x0018)	// Port C Data Direction
+#define PFDR		(GPIO_BASE + 0x0030)	// Port F Data
+#define PFDDR		(GPIO_BASE + 0x0034)	// Port F Data
+
+// Internal registers
+
+#define	INTERNAL_BASE	(REG_BASE + 0x00930000)
+
+#define	PwrCnt		(INTERNAL_BASE + 0x0004)// Clock/debug control status
+#define PwrCnt_USH_EN	(1<<28)			// USB host clock
 
 
 // Memory accessors

@@ -241,6 +241,13 @@ void arch_init(void)
 
 	ts72xx_init();
 
+#ifdef ENABLE_MMU
+	// Map in ep9301 internal registers
+	_mmu_remap(	(uint32_t *)INTERNAL_BASE,
+			(uint32_t *)INTERNAL_BASE,
+			MMU_AP_SRW_URW);	// @@@ URW or UNA?
+#endif
+
 	// Initialize UART1/console
 	memset(&uart1, 0, sizeof(struct uart));
 	uart1.uart_ops = &ep93xx_uart_ops;
