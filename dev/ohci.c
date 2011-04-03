@@ -35,24 +35,15 @@ static uint8_t PortPwrCtrlMask[2];
 		+ RH_ENDPOINT_DESC_LEN \
 		+ RH_HUB_DESC_LEN)
 
-static char *pid_str[] = {
-	"RESERVED",	// 0
-	"OUT",		// 1
-	"ACK",		// 2
-	"DATA0",	// 3
-	"PING",		// 4
-	"SOF",		// 5
-	"NYET",		// 6
-	"DATA2",	// 7
-	"SPLIT",	// 8
-	"IN",		// 9
-	"NAK",		// A / 10
-	"DATA1",	// B / 11
-	"PRE/ERR",	// C / 12
-	"SETUP",	// D / 13
-	"STALL",	// E / 14
-	"MDATA",	// F / 15
+// String descriptors
+static const char *ohci_str[] = {
+	"<null>",		// 0
+	"EEnright",		// 1 / device.iManufacturer
+	"OHCI Root Hub",	// 2 / device.iProduct
+	"12345678",		// 3 / device.iSerialNumber
+	"Hub",			// 4 / config.iConfiguration
 };
+static int ohci_str_max = 5;	// Maximum index into ohci_str
 
 enum hub_state {
 	HUB_IDLE = 0,
@@ -63,15 +54,19 @@ enum hub_state {
 
 struct hub_data {
 	int address;
+	int new_address;
 	char ep0_data[64];
+	int ep0_len;
 	enum hub_state state;
 	int status;
 };
 
 static struct hub_data hub = {
 	.address = 0,
+	.new_address = 0,
 	.state = HUB_IDLE,
 	.status = 0,
+	.ep0_len = 0,
 };
 
 // Returns zero if the root hubs were successfully probed
@@ -143,9 +138,9 @@ static int root_hub_probe(void)
 	root_hub.device_desc.idVendor = 0xEEEE;
 	root_hub.device_desc.idProduct = 0xAAAA;
 	root_hub.device_desc.bcdDevice = 0x0001;
-	root_hub.device_desc.iManufacturer = 0;		// @@@
-	root_hub.device_desc.iProduct = 0;		// @@@
-	root_hub.device_desc.iSerialNumber = 0;		// @@@
+	root_hub.device_desc.iManufacturer = 1;
+	root_hub.device_desc.iProduct = 2;
+	root_hub.device_desc.iSerialNumber = 3;
 	root_hub.device_desc.bNumConfigurations = 1;
 
 	//
@@ -157,11 +152,11 @@ static int root_hub_probe(void)
 	root_hub.configuration_desc.wTotalLength = RH_CONFIGURATION_DESC_TOTAL_LEN;
 	root_hub.configuration_desc.bNumInterfaces = 1;
 	// root_hub.configuration_desc.bConfigurationValue = 0;
-	// root_hub.configuration_desc.iConfiguration = 0;	// @@@
+	 root_hub.configuration_desc.iConfiguration = 4;
 
 	// root_hub.configuration_desc.bmAttributes.reserved0 = 0;
 	// root_hub.configuration_desc.bmAttributes.remoteWakeup = 0;
-	// root_hub.configuration_desc.bmAttributes.selfPowered = 0;
+	root_hub.configuration_desc.bmAttributes.selfPowered = 1;
 	root_hub.configuration_desc.bmAttributes.reserved1 = 1;
 
 	root_hub.configuration_desc.bMaxPower = 0;
@@ -236,26 +231,14 @@ void ohci_isr(void)
 static int hub_in(int ep, void *buf, off_t len)
 {
 	int rc = 0;
-	struct usb_token_pkt *pkt;
 
 	switch (ep & 0x7F) {	// strip IN/OUT bit
 	case 0:
-		pkt = (struct usb_token_pkt *)buf;
-		printf("hub_in: received %s token\r\n", pid_str[pkt->pid & 0x0F]);
-		switch (pkt->pid & 0x0F) {
-		case PID_IN:
-			switch (hub.state) {
-			case HUB_STATUS:
-				// Respond with status and go to idle
-				// @@@ respond
-				hub.state = HUB_IDLE;
-				break;
-
-			default:
-				break;
-			};
-			break;
-		};
+		if (len > hub.ep0_len)
+			len = hub.ep0_len;
+		memcpy(buf, hub.ep0_data, len);
+		hub.state = HUB_STATUS;
+		hub.status = PID_ACK;
 		break;
 
 	case 1:
@@ -275,24 +258,88 @@ static int ohci_in(int address, int ep, void *buf, off_t len)
 	// Intercept messages for the root hub
 	if (address == hub.address)
 		return hub_in(ep, buf, len);
+	else
+		printf("device in needed\r\n");
 
 	return 0;
 }
 
-static void hub_handle_request(struct usb_request_pkt *req)
+static void create_string_desc(int idx)
 {
-	switch (req->req.bRequest) {
-	case USB_SET_ADDRESS:
-		// Accept the new address
-		hub.address = req->req.wValue;
-		hub.status = PID_ACK;
-		hub.state = HUB_STATUS;
+	struct usb_string_desc *d = (struct usb_string_desc *)hub.ep0_data;
+	int i;
+	int len;
 
-		printf("OHCI root hub at address %d\r\n", hub.address);
+	if (idx > ohci_str_max) {
+		printf("invalid index\r\n");
+		hub.ep0_len = 0;
+		return;
+	}
+
+	len = strlen(ohci_str[idx]);
+
+	d->bLength = 2 + (len * 2);
+	d->bDescriptorType = USB_DESC_STRING;
+
+	for (i = 0; i < len; ++i) {
+		d->bString[i * 2] = 0;
+		d->bString[(i * 2) + 1] = ohci_str[idx][i];
+	}
+
+	hub.ep0_len = d->bLength;
+}
+
+static void get_descriptor(struct usb_request *req)
+{
+	int type = (req->wValue & 0xFF00) >> 8;
+	void *p = NULL;
+
+	switch (type) {
+	case USB_DESC_DEVICE:
+		hub.ep0_len = req->wLength > sizeof(root_hub.device_desc)
+			? sizeof(root_hub.device_desc)
+			: req->wLength;
+		p = &root_hub.device_desc;
+		break;
+
+	case USB_DESC_CONFIGURATION:
+		hub.ep0_len = req->wLength > sizeof(root_hub.configuration_desc)
+			? sizeof(root_hub.configuration_desc)
+			: req->wLength;
+		p = &root_hub.configuration_desc;
+		break;
+
+	case USB_DESC_STRING:
+		create_string_desc(req->wValue & 0xFF);
 		break;
 
 	default:
-		printf("hub_handle_request: unhandled request: %d\r\n", req->req.bRequest);
+		printf("ohci: unhandled GET_DESCRIPTOR: %d\r\n", type);
+		return;
+	}
+
+	if (p != NULL)
+		memcpy(hub.ep0_data, p, hub.ep0_len);
+	hub.state = HUB_DATA;
+}
+
+static void hub_handle_request(struct usb_request *req)
+{
+	switch (req->bRequest) {
+	case USB_SET_ADDRESS:
+		// Accept the new address (real assignment takes place after
+		// transaction completion)
+		hub.new_address = req->wValue;
+		hub.status = PID_ACK;
+		hub.state = HUB_STATUS;
+		break;
+
+	case USB_GET_DESCRIPTOR:
+		get_descriptor(req);
+		break;
+
+	default:
+		printf("hub_handle_request: unhandled request: %d\r\n", req->bRequest);
 		break;
 	};
 }
@@ -319,13 +366,34 @@ static int hub_out(int ep, const void *buf, off_t len)
 			case HUB_SETUP:
 				// This data will be the request
 				req = (struct usb_request_pkt *)buf;
-				hub_handle_request(req);
+				hub_handle_request(&req->req);
 				break;
 
 			default:
 				break;
 			};
 			break;
+
+		case PID_IN:
+			switch (hub.state) {
+			case HUB_STATUS:
+				// Respond with status and go to idle
+				// @@@ respond
+				hub.state = HUB_IDLE;
+
+				// New address must take effect only
+				// after transaction completion
+				if (hub.new_address) {
+					hub.address = hub.new_address;
+					hub.new_address = 0;
+				}
+				break;
+
+			default:
+				break;
+			};
+			break;
+
 		};
 
 		break;
@@ -347,6 +415,8 @@ static int ohci_out(int address, int ep, const void *buf, off_t len)
 	// Intercept messages for the root hub
 	if (address == hub.address)
 		return hub_out(ep, buf, len);
+	else
+		printf("device out needed\r\n");
 
 	return 0;
 }
@@ -430,12 +500,14 @@ void ohci_init(void)
 	outl(HcControl, inl(HcControl) | HcControl_USBOPERATIONAL);
 	// @@@ end critical section
 
+#if 0
 	printf("HcRhStatus: %x\r\nHcRhDescriptorA: %x\r\nHcRhDescriptorB: %x\r\nHcRhPortStatus1: %x\r\nHcRhPortStatus2: %x\r\n",
 		inl(HcRhStatus),
 		inl(HcRhDescriptorA),
 		inl(HcRhDescriptorB),
 		inl(HcRhPortStatus1),
 		inl(HcRhPortStatus2));
+#endif
 
 	// Register OHCI with USBD
 	if (root_hub_probe())

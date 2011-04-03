@@ -26,7 +26,7 @@ config.h: config.h.in components
 	cat config.h.in >> config.h
 	echo >> config.h
 	echo "/* From components */" >> config.h
-	sed 's/^\(.*\)=.*/#define \1/' components >> config.h
+	grep '=y' components | sed 's/^\(.*\)=.*/#define \1/' >> config.h
 	echo >> config.h
 	echo "#endif" >> config.h
 	
@@ -62,7 +62,7 @@ install:
 	cp ertos.bin $(INSTALLDIR)
 
 clean:
-	rm -f *.o ertos.elf ertos.bin ertos.map
+	rm -f *.o ertos.elf ertos.bin ertos.map config.h
 	for dir in $(OBJS); do \
 		$(MAKE) -C `basename $$dir .o` clean; \
 	done

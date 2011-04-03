@@ -6,6 +6,8 @@
  * it drops to a command prompt.
  */
 
+#include "../config.h"
+
 #include <sys/proc.h>
 #include <sys/sched.h>
 #include <sys/kernel.h>
@@ -26,6 +28,7 @@
 
 #ifdef CONFIG_USB
 #	include <ohci.h>
+#	include <usb.h>
 #endif
 
 #include "../arch/regs.h"
@@ -653,6 +656,72 @@ out_err:
 #endif // CONFIG_SPI
 
 #ifdef CONFIG_USB
+static inline void usb_print_string(struct usb_string_desc *d)
+{
+	int i = 0;
+
+	for (i = 0; i < (d->bLength - 2) / 2; ++i)
+		putchar(d->bString[(i * 2) + 1]);
+}
+
+static void cmd_usb_tree(void)
+{
+	struct usb_dev *dev;
+	struct list *p;
+	int i;
+
+	for (p = usb_devices.next; p != NULL; p = p->next) {
+		dev = (struct usb_dev *)p;
+
+		printf("[%d] %s (%d)\r\n",
+			dev->address,
+			dev->device_desc.bDeviceClass > usb_class_str_max
+				? "Unknown" : usb_class_str[dev->device_desc.bDeviceClass],
+			dev->device_desc.bDeviceClass);
+		printf("\tVID:PID %x:%x\r\n",
+			dev->device_desc.idVendor,
+			dev->device_desc.idProduct);
+
+		printf("\t");
+		if (dev->sProduct != NULL)
+			usb_print_string(dev->sProduct);
+		else
+			printf("<unknown>");
+
+		printf(" by ");
+
+		if (dev->sManufacturer != NULL)
+			usb_print_string(dev->sManufacturer);
+		else
+			printf("<unknown>");
+		puts("");
+
+		printf("\tS/N ");
+		if (dev->sManufacturer != NULL)
+			usb_print_string(dev->sSerialNumber);
+		else
+			printf("<unknown>");
+
+		printf(" Rev %x.%x\r\n",
+			(dev->device_desc.bcdDevice & 0xFF00) >> 8,
+			dev->device_desc.bcdDevice & 0xFF);
+			
+		printf("\tConfigurations: %d\r\n",
+			dev->device_desc.bNumConfigurations);
+
+		for (i = 0; i < dev->device_desc.bNumConfigurations; ++i) {
+			printf("\tC%d: %d mA ",
+				dev->configuration_desc[i].bMaxPower * 2,
+				dev->configuration_desc[i].bConfigurationValue);
+			if (dev->configuration_desc[i].bmAttributes.remoteWakeup)
+				printf("RemoteWakeup ");
+			if (dev->configuration_desc[i].bmAttributes.selfPowered)
+				printf("SelfPowered ");
+			puts("");
+		}
+	}
+}
+
 static void cmd_usb(int argc, char *argv[])
 {
 	if (argc < 2)
@@ -660,6 +729,8 @@ static void cmd_usb(int argc, char *argv[])
 
 	if (!strcmp(argv[1], "init")) {
 		ohci_init();
+	} else if (!strcmp(argv[1], "tree")) {
+		cmd_usb_tree();
 	} else {
 		goto out_err;
 	}
@@ -670,6 +741,7 @@ out_err:
 
 	printf("supported commands:\r\n");
 	printf("\tinit\r\n");
+	printf("\ttree\r\n");
 }
 #endif // CONFIG_USB
 

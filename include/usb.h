@@ -32,7 +32,7 @@ struct usb_device_desc {
 	uint8_t		iProduct;
 	uint8_t		iSerialNumber;
 	uint8_t		bNumConfigurations;
-};
+} __attribute__((packed));
 
 // Device Qualifier Descriptor (ref. USB 2.0 Chapter 9.6.2)
 struct usb_device_qualifier_desc {
@@ -64,7 +64,7 @@ struct usb_configuration_desc {
 	} bmAttributes;
 
 	uint8_t		bMaxPower;
-};
+} __attribute__((packed));
 
 // Other Speed Configuration Descriptor (ref. USB 2.0 Chapter 9.6.4)
 struct usb_other_speed_configuration_desc {
@@ -117,7 +117,7 @@ struct usb_string_desc {
 		uint16_t	wLANGID[1];
 		uint8_t		bString[2];
 	};
-};
+} __attribute__((packed));
 
 // Hub Descriptor (ref. USB 2.0 Chapter 11.23.2.1)
 struct usb_hub_desc {
@@ -330,9 +330,20 @@ struct usb_dev {
 
 	struct usb_endpoint_desc	control_ep;
 	struct usb_device_desc		device_desc;
+	struct usb_configuration_desc	*configuration_desc;
+
+	// device_desc.iManufacturer
+	struct usb_string_desc *sManufacturer;
+	struct usb_string_desc *sProduct;
+	struct usb_string_desc *sSerialNumber;
 
 	struct completion in_completion;
 };
+
+extern struct list usb_devices;
+extern char *usb_pid_str[];
+extern char *usb_class_str[];
+extern int usb_class_str_max;
 
 void usb_attach_device(struct usb_hcd *hcd);
 

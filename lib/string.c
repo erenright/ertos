@@ -81,6 +81,16 @@ int strcmp(const char *s1, const char *s2)
 	return 0;
 }
 
+int strlen(const char *s)
+{
+	int len = 0;
+
+	while (*s++ != '\0')
+		++len;
+
+	return len;
+}
+
 int atoi(const char *str)
 {
 	const char *p = str;
