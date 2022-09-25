@@ -18,7 +18,7 @@ This OS implements the following features:
 
 ## Toolchain
 
-Cross-compilers are available from embeddedTS [here](https://files.embeddedts.com//ts-arm-sbc/ts-7250-linux/cross-toolchains/). The version used was gcc-3.3.4-glibc-2-3-2, though any compiler supporting this ARM target may work, modulo warnings from newer compilers.
+Cross-compilers are available from embeddedTS [here](https://files.embeddedts.com//ts-arm-sbc/ts-7250-linux/cross-toolchains/). The version used was gcc-3.3.4-glibc-2.3.2, though any compiler supporting this ARM target may work, modulo warnings from newer compilers.
 
 ## To run on TS-7250
 
