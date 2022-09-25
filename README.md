@@ -28,6 +28,15 @@ Terminal settings: 115,200 8n1
 RedBoot> load -r -b 0x00100000 -m xmodem
 <send file via xmodem>
 RedBoot> go
+
+*** ERTOS - Eric's Real-Time Operating System ***
+
+Core arch and interrupts online
+Heap is 0x10CD4C+0x300344
+Kernel self is 0x1059A4
+spawned task "red": 02 @ 104D40 (p 115190, sb 18E090, s 10E0B0)
+spawned task "console": 03 @ 105520 (p 115290, sb 18F090, s 10E0D0)
+/
 ```
 
 Copy ertos.ld.xip overtop of ertos.ld and enable XIP in config.h to
