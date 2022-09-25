@@ -181,7 +181,9 @@ static void ts72xx_init(void)
 #endif
 
 #ifdef TS_7250
+#ifdef CONFIG_NAND
 	nand_init();
+#endif
 #endif
 }
 
@@ -208,6 +210,8 @@ static void init_interrupts(void)
 
 		x = inl(VIC2VectAddr);
 		outl(VIC2VectAddr, 0);
+
+		x = x; // hush the compiler
 	}
 
 	// Disable all vectored interrupts
