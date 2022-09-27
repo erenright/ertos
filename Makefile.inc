@@ -1,5 +1,4 @@
-CROSS	= arm-unknown-linux-gnu-
-#CROSS	= arm-linux-
+CROSS	= arm-linux-
 CC	= $(CROSS)gcc
 AS	= $(CROSS)as
 LD	= $(CROSS)ld
@@ -11,5 +10,7 @@ CFLAGS	= -Wall -Werror -fpic -ffreestanding -ggdb -I/home/eric/src/ertos/include
 .c.o:
 	$(CC) $(CFLAGS) -Wa,-ahdl=$<.list -c -o $@ $<
 
+.S.o:
+	$(CC) $(ASFLAGS) -c -o $@ $<
 .s.o:
-	$(AS) $(ASFLAGS) -o $@ $<
+	$(CC) $(ASFLAGS) -c -o $@ $<
