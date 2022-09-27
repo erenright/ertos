@@ -6,7 +6,6 @@ OBJS	= \
 	cons.o \
 	sched.o \
 	mem.o \
-	sem.o \
 	syscall.o \
 	timers.o \
 	list.o

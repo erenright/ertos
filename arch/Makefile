@@ -8,7 +8,6 @@ OBJS	= \
 	init.o \
 	irq.o \
 	uart.o \
-	sem.o \
 	cpu.o \
 	mmu.o \
 	misc.o \
