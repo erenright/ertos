@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "regs.h"
 #include "../config.h"
 
 	/*
@@ -119,6 +120,10 @@ _cstartup:
 	blt	1b
 
 	/* Fill the stack with a known value */
+/* No issue here with original Technologic Systems' compiler,
+ * but NetBSD/pkgsrc cross-arm-none-eabi fails with an unhandled
+ * trap.  Disassembly and hex compare between the two are
+ * identical?!
 	ldr	r1, =__stack_start__
 	ldr	r2, =__stack_end__
 	ldr	r3, =STACK_FILL
@@ -126,6 +131,7 @@ _cstartup:
 	cmp	r1, r2
 	stmltia	r1!, {r3}
 	blt	1b
+*/
 
 	/* Initialize stack pointers for all ARM modes */
 	msr	CPSR_c, #(IRQ_MODE | I_BIT | F_BIT)	@ IRQ
