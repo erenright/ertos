@@ -55,6 +55,7 @@ SECTIONS
 	} >ram
 
 	.stack RAM_START + SIZEOF(.data) + SIZEOF(.bss) : {
+		. = ALIGN(4);
 		__stack_start__ = .;
 
 		. += IRQ_STACK_SIZE;

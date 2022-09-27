@@ -33,6 +33,7 @@ SECTIONS
 	.rodata : { *(.rodata) }
 
 	.stack : {
+		. = ALIGN(4);
 		__stack_start__ = .;
 
 		. += IRQ_STACK_SIZE;
