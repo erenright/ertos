@@ -1,4 +1,4 @@
-CROSS	= arm-linux-
+CROSS	= arm-none-eabi-
 CC	= $(CROSS)gcc
 AS	= $(CROSS)as
 LD	= $(CROSS)ld
