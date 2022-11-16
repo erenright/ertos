@@ -152,28 +152,17 @@ _cstartup:
 	mcr	p15, 0, r1, c1, c0, 0*/
 
 #ifdef ENABLE_MMU
-	/* Enable the MMU with TTB at 0x00300000 */
-	ldr	r4, =0x00300000
-	mov	r1, r4
-	ldr	r2, =(0x00300000+0x4000)
-	mov	r3, #0
-    1:
-	cmp	r1, r2
-	stmltia	r1!, {r3}		@ zero the TTB
-	blt	1b
-
 	mrc	p15, 0, r1, c1, c0, 0
 	bic	r1, r1, #1
 	mcr	p15, 0, r1, c1, c0, 0	@ ensure MMU is disabled
 
-	mov	r1, #0
-	mcr	p15, 0, r1, c7, c7, 0	@ invalidate caches
-	mcr	p15, 0, r1, c8, c7, 0	@ invalidate TLBs
+	/*
+	 * Enable the MMU with TTB at `lvl1table` and map the
+	 * entire address space as 1:1 sections.
+	 */
+	adr	r4, lvl1table
+	ldr	r1, [r4]
 
-	mov	r1, r4
-	mcr	p15, 0, r1, c2, c0, 0	@ set TTB base
-
-	/* Map RAM 1:1 (0x00000000-0x02000000) as 1MB sections */
 	mov	r3, #0			@ start with MB 0
     1:
 	mov	r2, #(MMU_SECTION | TT_BIT)
@@ -181,42 +170,8 @@ _cstartup:
 	orr	r2, r2, r3, lsl #20
 	str	r2, [r1, r3, lsl #2]	@ store at r1+(r3*4)
 	add	r3, r3, #1
-	cmp	r3, #32
+	cmp	r3, #4096		@ 4GB worth
 	blt	1b
-
-#ifdef TS_7200
-	add	r1, r1, r3, lsl #2	@ r1 += (r3 * 4)
-
-	/* Map FLASH 1:1 (0x60000000-0x61000000) as 1MB sections */
-	mov	r3, #0			@ start with MB 0
-	ldr	r0, =(0x600 * 4)
-	add	r0, r0, r1
-    1:
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
-	orr	r2, r2, r3, lsl #20
-	stmia	r0!, {r2}
-	add	r3, r3, #1
-	cmp	r3, #16
-	blt	1b
-#endif
-
-	/* Map IO 1:1 
-	 * 0x80000000-0x80100000
-	 * 0x80800000-0x80900000
-	 */
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
-	orr	r2, r2, #0x80000000
-	ldr	r0, =(0x800 * 4)
-	str	r2, [r1, r0]
-
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
-	orr	r2, r2, #0x80000000
-	orr	r2, r2, #0x00800000
-	ldr	r0, =(0x808 * 4)
-	str	r2, [r1, r0]
 
 	/* Remap 0xFFE00000 to 0x0 (exception vectors)
 	 * R/W for kernel, no access for user */
@@ -226,18 +181,29 @@ _cstartup:
 	str	r2, [r1, r0]
 
 	/* Remap NULL such that it is invalid */
+/*
 	mov	r2, #(MMU_SECTION | TT_BIT)
 	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_UNA)
 	str	r2, [r1]
+*/
 
 	/* Init domains */
 	@mov	r0, #(3 << 30)		@ 3 = Manager (no access checks)
 	mov	r0, #(1 << 30)		@ 1 = Client (all access checks)
 	mcr	p15, 0, r0, c3, c0, 0
 
+	/* Set TTB */
+	mov	r1, #0
+	mcr	p15, 0, r1, c7, c7, 0	@ invalidate caches
+	mcr	p15, 0, r1, c8, c7, 0	@ invalidate TLBs
+
+	ldr	r1, [r4]
+	mcr	p15, 0, r1, c2, c0, 0	@ set TTB base
+
+	/* Enable caches and MMU */
 	mrc	p15, 0, r1, c1, c0, 0
 	orr	r1, r1, #4		@ enable D-cache
-	@orr	r1, r1, #(1 << 12)	@ enable I-cache
+	orr	r1, r1, #(1 << 12)	@ enable I-cache
 	orr	r1, r1, #1		@ MMU
 	mcr	p15, 0, r1, c1, c0, 0
 #endif /* ENABLE_MMU */
@@ -250,5 +216,10 @@ _cstartup:
 
 	.size	_start, . - _start
 	.endfunc
+
+	.align 4
+lvl1table:
+	.word 0x4000	/* 16KB past zero to avoid reset vectors, etc */
+			/* RedBoot doesn't need this any longer. */
 
 	.end

@@ -34,7 +34,8 @@ config.h: config.h.in components
 ertos: $(OBJS)
 	$(LD) -Map=ertos.map -T ertos.ld -o ertos.elf $(OBJS)
 	$(OBJCOPY) -O binary ertos.elf ertos.bin
-	ls -lh ertos.elf ertos.bin
+	@ls -lh ertos.elf ertos.bin
+	@size ertos.elf
 
 arch.o: force_look
 	$(MAKE) -C arch
