@@ -23,7 +23,7 @@ config.h: config.h.in components
 	echo "#define _CONFIG_H" >> config.h
 	echo >> config.h
 	echo "/* From config.h.in */" >> config.h
-	cat config.h.in >> config.h
+	grep '^#.*' config.h.in >> config.h
 	echo >> config.h
 	echo "/* From components */" >> config.h
 	grep '=y' components | sed 's/^\(.*\)=.*/#define \1/' >> config.h
@@ -32,7 +32,7 @@ config.h: config.h.in components
 	
 
 ertos: $(OBJS)
-	$(LD) -Map=ertos.map -T ertos.ld -o ertos.elf $(OBJS)
+	$(LD) -Map=ertos.map -T ertos.ld.mmu -o ertos.elf $(OBJS)
 	$(OBJCOPY) -O binary ertos.elf ertos.bin
 	@ls -lh ertos.elf ertos.bin
 	@size ertos.elf

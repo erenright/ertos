@@ -92,7 +92,82 @@ _reset:
 	ldr	r1, =_cstartup
 	mov	lr, r1
 	ldr	sp, =__stack_end__	@ Temporary stack
-	b	_cstartup		@@@ should be low_level_init!
+
+#ifdef ENABLE_MMU
+	mrc	p15, 0, r1, c1, c0, 0
+	bic	r1, r1, #1
+	mcr	p15, 0, r1, c1, c0, 0	@ ensure MMU is disabled
+
+	/*
+	 * Enable the MMU with TTB at `lvl1table` and map the
+	 * entire address space as 1:1 sections.
+	 */
+	adr	r4, lvl1table
+	ldr	r1, [r4]
+
+	mov	r3, #0			@ start with MB 0
+    1:
+	mov	r2, #(MMU_SECTION | TT_BIT)
+	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
+	orr	r2, r2, r3, lsl #20
+	str	r2, [r1, r3, lsl #2]	@ store at r1+(r3*4)
+	add	r3, r3, #1
+	cmp	r3, #4096		@ 4GB worth
+	blt	1b
+
+	/* Remap 0xFFE00000 to 0x0 (exception vectors)
+	 * R/W for kernel, no access for user */
+	mov	r2, #(MMU_SECTION | TT_BIT)
+	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_UNA)
+	ldr	r0, =(0xFFE * 4)
+	str	r2, [r1, r0]
+
+	/* Remap 0x00100000+0x700000 to 0xF0000000 (kernel space) */
+	/* After this we can start using VAs instead of PAs */
+	mov	r3, #1			@ start with RAM MB 1
+    1:
+	mov	r2, #(MMU_SECTION | TT_BIT)
+	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
+	orr	r2, r2, r3, lsl #20
+	mov	r0, #0xF00
+	add	r0, r0, r3
+	sub	r0, r0, #1
+	str	r2, [r1, r0, lsl #2]
+	add	r3, r3, #1
+	cmp	r3, #7			@ and end with RAM MB 7
+	blt	1b
+
+	/* Remap NULL such that it is invalid */
+/*
+	mov	r2, #(MMU_SECTION | TT_BIT)
+	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_UNA)
+	str	r2, [r1]
+*/
+
+	/* Init domains */
+	@mov	r0, #(3 << 30)		@ 3 = Manager (no access checks)
+	mov	r0, #(1 << 30)		@ 1 = Client (all access checks)
+	mcr	p15, 0, r0, c3, c0, 0
+
+	/* Set TTB */
+	mov	r1, #0
+	mcr	p15, 0, r1, c7, c7, 0	@ invalidate caches
+	mcr	p15, 0, r1, c8, c7, 0	@ invalidate TLBs
+
+	ldr	r1, [r4]
+	mcr	p15, 0, r1, c2, c0, 0	@ set TTB base
+
+	/* Enable caches and MMU */
+	mrc	p15, 0, r1, c1, c0, 0
+	orr	r1, r1, #4		@ enable D-cache
+	orr	r1, r1, #(1 << 12)	@ enable I-cache
+	orr	r1, r1, #1		@ MMU
+	mcr	p15, 0, r1, c1, c0, 0
+
+	/* Jump to VA */
+#endif /* ENABLE_MMU */
+	ldr	r0, =_cstartup
+	mov	pc, r0
 	.endfunc
 
 	.global _cstartup
@@ -150,63 +225,6 @@ _cstartup:
 	/*mrc	p15, 0, r1, c1, c0, 0
 	orr	r1, r1, #(1 << 13)	@ map vector tables to 0xFFFF0000
 	mcr	p15, 0, r1, c1, c0, 0*/
-
-#ifdef ENABLE_MMU
-	mrc	p15, 0, r1, c1, c0, 0
-	bic	r1, r1, #1
-	mcr	p15, 0, r1, c1, c0, 0	@ ensure MMU is disabled
-
-	/*
-	 * Enable the MMU with TTB at `lvl1table` and map the
-	 * entire address space as 1:1 sections.
-	 */
-	adr	r4, lvl1table
-	ldr	r1, [r4]
-
-	mov	r3, #0			@ start with MB 0
-    1:
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_URW)
-	orr	r2, r2, r3, lsl #20
-	str	r2, [r1, r3, lsl #2]	@ store at r1+(r3*4)
-	add	r3, r3, #1
-	cmp	r3, #4096		@ 4GB worth
-	blt	1b
-
-	/* Remap 0xFFE00000 to 0x0 (exception vectors)
-	 * R/W for kernel, no access for user */
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_UNA)
-	ldr	r0, =(0xFFE * 4)
-	str	r2, [r1, r0]
-
-	/* Remap NULL such that it is invalid */
-/*
-	mov	r2, #(MMU_SECTION | TT_BIT)
-	orr	r2, r2, #(DOMAIN | MMU_AP_SRW_UNA)
-	str	r2, [r1]
-*/
-
-	/* Init domains */
-	@mov	r0, #(3 << 30)		@ 3 = Manager (no access checks)
-	mov	r0, #(1 << 30)		@ 1 = Client (all access checks)
-	mcr	p15, 0, r0, c3, c0, 0
-
-	/* Set TTB */
-	mov	r1, #0
-	mcr	p15, 0, r1, c7, c7, 0	@ invalidate caches
-	mcr	p15, 0, r1, c8, c7, 0	@ invalidate TLBs
-
-	ldr	r1, [r4]
-	mcr	p15, 0, r1, c2, c0, 0	@ set TTB base
-
-	/* Enable caches and MMU */
-	mrc	p15, 0, r1, c1, c0, 0
-	orr	r1, r1, #4		@ enable D-cache
-	orr	r1, r1, #(1 << 12)	@ enable I-cache
-	orr	r1, r1, #1		@ MMU
-	mcr	p15, 0, r1, c1, c0, 0
-#endif /* ENABLE_MMU */
 
 	/* Good to go, run user code */
 	bl	main
