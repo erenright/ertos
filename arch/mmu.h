@@ -36,9 +36,6 @@
 #ifndef _ARCH_MMU_H
 #define _ARCH_MMU_H
 
-// Translation table base
-#define TTB		0x00300000
-
 #define MMU_SECTION		0x02	// 1MB page
 #define MMU_SECTION_MASK	0xFFF00000
 
