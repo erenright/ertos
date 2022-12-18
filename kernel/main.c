@@ -55,7 +55,7 @@ void ep9301_eth_init(void);
 // net/dll/eth.c
 int eth_init(void);
 
-void run_boot_processes(void)
+static void run_boot_processes(void)
 {
 	struct proc *kproc;
 	struct user_process *uproc;
