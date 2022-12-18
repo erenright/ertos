@@ -218,6 +218,7 @@ _cstartup:
 	.endfunc
 
 	.align 4
+	.global lvl1table
 lvl1table:
 	.word 0x4000	/* 16KB past zero to avoid reset vectors, etc */
 			/* RedBoot doesn't need this any longer. */

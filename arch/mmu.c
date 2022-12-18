@@ -69,7 +69,7 @@ static const char *fsr_faults[] = {
 };
 
 // Pointer to MMU translation table
-static uint32_t *ttb = (uint32_t *)TTB;
+extern uint32_t *lvl1table;
 
 // @@@ kernel/mem.c
 void user_page_fault(void *ptr);
@@ -138,7 +138,7 @@ void _mmu_remap(void *virt, void *phys, int flags)
 	entry = (uint32_t)phys & MMU_SECTION_MASK;
 	entry |= flags & (~MMU_SECTION_MASK);
 
-	ttb[idx] = entry;
+	lvl1table[idx] = entry;
 
 	mmu_invalidate_caches();
 	mmu_invalidate_tlb();
